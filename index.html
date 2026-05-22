@@ -859,33 +859,64 @@
 // CONSTANTES
 // ====================================================================
 
-var RSS_PROXY = "https://api.allorigins.win/raw?url=";
+// Proxies CORS testes par ordre de priorite - le premier qui repond est utilise
+var RSS_PROXIES = [
+  "https://corsproxy.io/?url=",
+  "https://api.allorigins.win/raw?url="
+];
 
+// Flux statiques - bases sur Google News pour la fiabilite maximale via proxy
+// + quelques flux RSS libres qui passent les proxies CORS
 var STATIC_FEEDS = [
   {
-    id: "reuters_biz",
-    label: "Reuters Business",
-    url: "https://feeds.reuters.com/reuters/businessNews"
+    id: "gnews_finance_fr",
+    label: "Google News Finance FR",
+    url: "https://news.google.com/rss/topics/CAAqJggKIiBDQkFTRWdvSUwyMHZNRGx6TVdZU0FtWnZHZ0pHVWlnQVAB?hl=fr&gl=FR&ceid=FR:fr"
   },
   {
-    id: "marketwatch",
-    label: "MarketWatch",
-    url: "https://feeds.marketwatch.com/marketwatch/topstories/"
+    id: "gnews_finance_us",
+    label: "Google News Finance US",
+    url: "https://news.google.com/rss/topics/CAAqJggKIiBDQkFTRWdvSUwyMHZNRGx6TVdZU0FtVnVHZ0pWVWlnQVAB?hl=en-US&gl=US&ceid=US:en"
   },
   {
-    id: "globenewswire_tech",
-    label: "GlobeNewswire Tech",
-    url: "https://www.globenewswire.com/RssFeed/subjectcode/SCT-Technology/"
+    id: "gnews_tech_fr",
+    label: "Google News Tech FR",
+    url: "https://news.google.com/rss/topics/CAAqJggKIiBDQkFTRWdvSUwyMHZNREp1Y1dZU0FtWnZHZ0pHVWlnQVAB?hl=fr&gl=FR&ceid=FR:fr"
   },
   {
-    id: "businesswire",
-    label: "BusinessWire",
-    url: "https://feed.businesswire.com/rss/home/?rss=G22"
+    id: "gnews_quantum",
+    label: "Google News Quantique",
+    url: "https://news.google.com/rss/search?q=informatique+quantique+bourse+financement&hl=fr&gl=FR&ceid=FR:fr"
   },
   {
-    id: "lesechos",
-    label: "Les Echos Finance",
-    url: "https://www.lesechos.fr/rss/rss_finance.xml"
+    id: "gnews_defense",
+    label: "Google News Defense",
+    url: "https://news.google.com/rss/search?q=defense+aerospace+contrat+gouvernement+bourse&hl=fr&gl=FR&ceid=FR:fr"
+  },
+  {
+    id: "gnews_satellite",
+    label: "Google News Satellite",
+    url: "https://news.google.com/rss/search?q=satellite+LEO+constellation+orbite+bourse&hl=fr&gl=FR&ceid=FR:fr"
+  },
+  {
+    id: "gnews_quantum_en",
+    label: "Google News Quantum EN",
+    url: "https://news.google.com/rss/search?q=quantum+computing+chip+government+funding+stock&hl=en-US&gl=US&ceid=US:en"
+  },
+  {
+    id: "gnews_ma_en",
+    label: "Google News M&A EN",
+    url: "https://news.google.com/rss/search?q=acquisition+merger+billion+contract+stock+market&hl=en-US&gl=US&ceid=US:en"
+  },
+  {
+    id: "cnbc_finance",
+    label: "CNBC Finance",
+    url: "https://www.cnbc.com/id/10000664/device/rss/rss.html"
+  },
+  {
+    id: "prnewswire",
+    label: "PR Newswire",
+    url: "https://www.prnewswire.com/rss/news-releases-list.rss"
   }
 ];
 
@@ -1025,28 +1056,42 @@ function addLog(level, msg) {
 function buildDynamicFeeds(tickers) {
   var feeds = [];
   tickers.forEach(function(t) {
+    // Google News francais - angle bourse/cours
     feeds.push({
-      id: "yahoo_" + t,
-      label: "Yahoo Finance " + t,
-      url: "https://finance.yahoo.com/rss/headline?s=" + t
-    });
-    feeds.push({
-      id: "gnews_" + t,
-      label: "Google News " + t,
+      id: "gnews_fr_" + t,
+      label: "Google News FR " + t,
       url: "https://news.google.com/rss/search?q=" +
-           encodeURIComponent(t + " action bourse") +
+           encodeURIComponent(t + " action cours bourse") +
            "&hl=fr&gl=FR&ceid=FR:fr"
+    });
+    // Google News anglais - angle stock/earnings
+    feeds.push({
+      id: "gnews_en_" + t,
+      label: "Google News EN " + t,
+      url: "https://news.google.com/rss/search?q=" +
+           encodeURIComponent(t + " stock earnings contract") +
+           "&hl=en-US&gl=US&ceid=US:en"
     });
   });
   return feeds;
 }
 
 async function fetchFeed(feed) {
-  var url = RSS_PROXY + encodeURIComponent(feed.url);
-  var resp = await fetch(url, { signal: AbortSignal.timeout(12000) });
-  if (!resp.ok) throw new Error("HTTP " + resp.status);
-  var text = await resp.text();
-  return parseXml(text, feed);
+  var lastErr = null;
+  for (var pi = 0; pi < RSS_PROXIES.length; pi++) {
+    var url = RSS_PROXIES[pi] + encodeURIComponent(feed.url);
+    try {
+      var resp = await fetch(url, { signal: AbortSignal.timeout(20000) });
+      if (!resp.ok) throw new Error("HTTP " + resp.status);
+      var text = await resp.text();
+      if (!text || text.trim().length < 30) throw new Error("Reponse vide");
+      return parseXml(text, feed);
+    } catch(err) {
+      lastErr = err;
+      // essayer le proxy suivant
+    }
+  }
+  throw lastErr || new Error("Tous les proxies ont echoue");
 }
 
 function parseXml(xmlText, feed) {
