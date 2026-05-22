@@ -1,0 +1,1681 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Veille Bourse">
+  <title>Veille Bourse</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@300;400;600;700&display=swap');
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    :root {
+      --bg:       #080b14;
+      --s1:       #0d1120;
+      --s2:       #131929;
+      --s3:       #1a2236;
+      --border:   #1f2d48;
+      --border2:  #263452;
+      --t1:       #e8eef8;
+      --t2:       #8fa3c2;
+      --t3:       #4d6285;
+      --t4:       #2d3f5c;
+      --green:    #00e5a0;
+      --green-bg: rgba(0,229,160,0.08);
+      --red:      #ff5757;
+      --red-bg:   rgba(255,87,87,0.08);
+      --blue:     #4d9fff;
+      --blue-bg:  rgba(77,159,255,0.08);
+      --amber:    #ffaa00;
+      --amber-bg: rgba(255,170,0,0.1);
+      --r:        8px;
+      --r-sm:     5px;
+      --mono:     'IBM Plex Mono', monospace;
+      --sans:     'IBM Plex Sans', system-ui, sans-serif;
+    }
+
+    html, body {
+      height: 100%;
+      background: var(--bg);
+      color: var(--t1);
+      font-family: var(--sans);
+      font-size: 14px;
+      line-height: 1.5;
+      overflow: hidden;
+      overscroll-behavior: none;
+    }
+
+    /* ----------------------------------------------------------------
+       UTILITAIRES
+    ---------------------------------------------------------------- */
+
+    .hidden { display: none !important; }
+
+    input, textarea, button, select {
+      font-family: var(--sans);
+      -webkit-appearance: none;
+      appearance: none;
+    }
+
+    /* ----------------------------------------------------------------
+       ECRAN SETUP
+    ---------------------------------------------------------------- */
+
+    #screen-setup {
+      position: fixed;
+      inset: 0;
+      background: var(--bg);
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      padding: 0 0 calc(env(safe-area-inset-bottom) + 24px) 0;
+    }
+
+    .setup-top {
+      background: linear-gradient(160deg, #0d1a3a 0%, #080b14 60%);
+      padding: calc(env(safe-area-inset-top) + 40px) 20px 32px;
+      border-bottom: 1px solid var(--border);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .setup-top::before {
+      content: '';
+      position: absolute;
+      top: -80px; right: -60px;
+      width: 260px; height: 260px;
+      background: radial-gradient(circle, rgba(77,159,255,0.12) 0%, transparent 70%);
+      pointer-events: none;
+    }
+
+    .setup-top::after {
+      content: '';
+      position: absolute;
+      bottom: -40px; left: -40px;
+      width: 180px; height: 180px;
+      background: radial-gradient(circle, rgba(0,229,160,0.06) 0%, transparent 70%);
+      pointer-events: none;
+    }
+
+    .setup-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: var(--blue-bg);
+      border: 1px solid rgba(77,159,255,0.2);
+      border-radius: 20px;
+      padding: 4px 12px;
+      font-family: var(--mono);
+      font-size: 10px;
+      color: var(--blue);
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      margin-bottom: 14px;
+    }
+
+    .badge-dot {
+      width: 5px; height: 5px;
+      border-radius: 50%;
+      background: var(--blue);
+      animation: blink 2s infinite;
+    }
+
+    @keyframes blink {
+      0%, 100% { opacity: 1; }
+      50%       { opacity: 0.2; }
+    }
+
+    .setup-title {
+      font-size: 26px;
+      font-weight: 700;
+      color: var(--t1);
+      letter-spacing: -0.02em;
+      line-height: 1.2;
+      margin-bottom: 8px;
+    }
+
+    .setup-title span {
+      color: var(--blue);
+    }
+
+    .setup-desc {
+      font-size: 13px;
+      color: var(--t3);
+      line-height: 1.6;
+    }
+
+    .setup-body {
+      padding: 24px 20px 0;
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+    }
+
+    .setup-section {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .setup-section-title {
+      font-family: var(--mono);
+      font-size: 10px;
+      font-weight: 600;
+      color: var(--t3);
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      padding-bottom: 10px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    /* ----------------------------------------------------------------
+       FORMULAIRE - elements communs
+    ---------------------------------------------------------------- */
+
+    .fg {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .fg-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    label {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--t2);
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+
+    .hint {
+      font-size: 11px;
+      color: var(--t4);
+      line-height: 1.4;
+    }
+
+    input[type="text"],
+    input[type="password"],
+    input[type="number"],
+    textarea {
+      background: var(--s2);
+      border: 1px solid var(--border);
+      border-radius: var(--r-sm);
+      color: var(--t1);
+      font-size: 13px;
+      padding: 10px 12px;
+      outline: none;
+      transition: border-color 0.15s, background 0.15s;
+      width: 100%;
+    }
+
+    input:focus, textarea:focus {
+      border-color: var(--blue);
+      background: var(--s3);
+    }
+
+    textarea {
+      resize: none;
+      height: 72px;
+      line-height: 1.5;
+    }
+
+    input[type="number"] {
+      text-align: center;
+    }
+
+    /* ----------------------------------------------------------------
+       BOUTONS
+    ---------------------------------------------------------------- */
+
+    .btn-cta {
+      width: 100%;
+      background: var(--blue);
+      color: var(--bg);
+      border: none;
+      border-radius: var(--r);
+      font-size: 14px;
+      font-weight: 700;
+      padding: 15px;
+      cursor: pointer;
+      letter-spacing: 0.02em;
+      touch-action: manipulation;
+      transition: opacity 0.15s, transform 0.1s;
+    }
+
+    .btn-cta:active {
+      opacity: 0.85;
+      transform: scale(0.99);
+    }
+
+    .btn-outline {
+      background: var(--s2);
+      color: var(--t2);
+      border: 1px solid var(--border);
+      border-radius: var(--r-sm);
+      font-size: 12px;
+      font-weight: 600;
+      padding: 9px 14px;
+      cursor: pointer;
+      touch-action: manipulation;
+      transition: border-color 0.15s, color 0.15s;
+    }
+
+    .btn-outline:active { opacity: 0.7; }
+
+    .btn-outline.full { width: 100%; }
+
+    .btn-outline.danger {
+      color: var(--red);
+      border-color: rgba(255,87,87,0.3);
+    }
+
+    /* ----------------------------------------------------------------
+       ECRAN PRINCIPAL
+    ---------------------------------------------------------------- */
+
+    #screen-app {
+      position: fixed;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      background: var(--bg);
+    }
+
+    /* ---- En-tete ---- */
+
+    #app-header {
+      flex: 0 0 auto;
+      background: var(--s1);
+      border-bottom: 1px solid var(--border);
+      padding: calc(env(safe-area-inset-top) + 12px) 16px 10px;
+    }
+
+    .header-r1 {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 5px;
+    }
+
+    .app-name {
+      font-family: var(--mono);
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--t1);
+      letter-spacing: 0.04em;
+    }
+
+    .app-name span { color: var(--blue); }
+
+    .status-pill {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      background: var(--s2);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 4px 11px;
+    }
+
+    .status-dot {
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      flex-shrink: 0;
+      transition: background 0.3s;
+    }
+
+    .status-dot.active  { background: var(--green); box-shadow: 0 0 6px var(--green); }
+    .status-dot.cycling { background: var(--amber); animation: pulse 0.9s infinite; }
+    .status-dot.paused  { background: var(--t4); }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; box-shadow: 0 0 4px var(--amber); }
+      50%       { opacity: 0.3; box-shadow: none; }
+    }
+
+    #status-txt {
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--t2);
+    }
+
+    #countdown {
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--t3);
+      min-height: 16px;
+    }
+
+    #header-stats {
+      font-family: var(--mono);
+      font-size: 10px;
+      color: var(--t4);
+    }
+
+    /* ---- Barre de controles ---- */
+
+    #app-controls {
+      flex: 0 0 auto;
+      display: flex;
+      gap: 8px;
+      padding: 8px 16px;
+      background: var(--s1);
+      border-bottom: 1px solid var(--border);
+    }
+
+    /* ---- Contenu des onglets ---- */
+
+    .tab-panel {
+      flex: 1 1 auto;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      overscroll-behavior: contain;
+      padding: 12px 16px calc(env(safe-area-inset-bottom) + 72px);
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .empty-state {
+      margin-top: 60px;
+      text-align: center;
+      color: var(--t4);
+      font-size: 13px;
+      line-height: 1.8;
+    }
+
+    .empty-state strong {
+      display: block;
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--t3);
+      margin-bottom: 8px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    /* ---- Cartes d'alertes ---- */
+
+    .alert-card {
+      background: var(--s1);
+      border: 1px solid var(--border);
+      border-radius: var(--r);
+      overflow: hidden;
+      position: relative;
+    }
+
+    .alert-card::before {
+      content: '';
+      position: absolute;
+      left: 0; top: 0; bottom: 0;
+      width: 3px;
+    }
+
+    .alert-card.dir-up::before    { background: var(--green); }
+    .alert-card.dir-down::before  { background: var(--red); }
+    .alert-card.dir-neutral::before { background: var(--t4); }
+
+    .alert-inner {
+      padding: 12px 12px 12px 16px;
+    }
+
+    .alert-top {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      margin-bottom: 9px;
+    }
+
+    .alert-score-block {
+      flex-shrink: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      width: 42px; height: 42px;
+      border-radius: var(--r-sm);
+      font-weight: 700;
+    }
+
+    .alert-card.dir-up   .alert-score-block { background: var(--green-bg); }
+    .alert-card.dir-down .alert-score-block { background: var(--red-bg); }
+    .alert-card.dir-neutral .alert-score-block { background: var(--s3); }
+
+    .alert-score-num {
+      font-family: var(--mono);
+      font-size: 18px;
+      font-weight: 600;
+      line-height: 1;
+    }
+
+    .alert-card.dir-up   .alert-score-num { color: var(--green); }
+    .alert-card.dir-down .alert-score-num { color: var(--red); }
+    .alert-card.dir-neutral .alert-score-num { color: var(--t2); }
+
+    .alert-score-denom {
+      font-family: var(--mono);
+      font-size: 9px;
+      color: var(--t4);
+      line-height: 1;
+    }
+
+    .alert-meta {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+    }
+
+    .alert-dir-badge {
+      display: inline-block;
+      font-family: var(--mono);
+      font-size: 9px;
+      font-weight: 600;
+      letter-spacing: 0.1em;
+      padding: 2px 7px;
+      border-radius: 3px;
+      width: fit-content;
+    }
+
+    .dir-up   .alert-dir-badge { background: var(--green-bg); color: var(--green); }
+    .dir-down .alert-dir-badge { background: var(--red-bg);   color: var(--red); }
+    .dir-neutral .alert-dir-badge { background: var(--s3);    color: var(--t3); }
+
+    .alert-tickers {
+      font-family: var(--mono);
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--blue);
+    }
+
+    .alert-confiance {
+      font-size: 10px;
+      color: var(--t4);
+    }
+
+    .alert-time-lbl {
+      flex-shrink: 0;
+      font-family: var(--mono);
+      font-size: 10px;
+      color: var(--t4);
+    }
+
+    .alert-raison {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--t1);
+      line-height: 1.4;
+      margin-bottom: 5px;
+    }
+
+    .alert-title-txt {
+      font-size: 11px;
+      color: var(--t3);
+      line-height: 1.45;
+      margin-bottom: 10px;
+    }
+
+    .alert-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-top: 1px solid var(--border);
+      padding: 8px 12px 8px 16px;
+      background: var(--s2);
+    }
+
+    .alert-source-lbl {
+      font-family: var(--mono);
+      font-size: 10px;
+      color: var(--t4);
+    }
+
+    .alert-link-btn {
+      font-family: var(--mono);
+      font-size: 10px;
+      font-weight: 600;
+      color: var(--blue);
+      text-decoration: none;
+      padding: 4px 10px;
+      background: var(--blue-bg);
+      border: 1px solid rgba(77,159,255,0.15);
+      border-radius: 4px;
+      touch-action: manipulation;
+    }
+
+    /* ---- Journal ---- */
+
+    .log-entry {
+      display: grid;
+      grid-template-columns: 55px 38px 1fr;
+      gap: 6px;
+      font-family: var(--mono);
+      font-size: 11px;
+      line-height: 1.5;
+      padding: 5px 0;
+      border-bottom: 1px solid rgba(31,45,72,0.5);
+      align-items: start;
+    }
+
+    .log-time { color: var(--t4); }
+    .log-lvl  { font-weight: 600; }
+    .log-msg  { color: var(--t2); word-break: break-word; }
+
+    .log-info .log-lvl  { color: var(--blue); }
+    .log-warn .log-lvl  { color: var(--amber); }
+    .log-error .log-lvl { color: var(--red); }
+
+    /* ---- Onglet config ---- */
+
+    .config-block {
+      background: var(--s1);
+      border: 1px solid var(--border);
+      border-radius: var(--r);
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .config-block-title {
+      font-family: var(--mono);
+      font-size: 10px;
+      font-weight: 600;
+      color: var(--t3);
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+    }
+
+    .sep {
+      height: 1px;
+      background: var(--border);
+    }
+
+    /* ---- Navigation bas ---- */
+
+    #app-nav {
+      position: fixed;
+      bottom: 0; left: 0; right: 0;
+      background: var(--s1);
+      border-top: 1px solid var(--border);
+      display: flex;
+      padding-bottom: env(safe-area-inset-bottom);
+      z-index: 100;
+    }
+
+    .tab-btn {
+      flex: 1;
+      background: none;
+      border: none;
+      color: var(--t4);
+      font-family: var(--mono);
+      font-size: 10px;
+      font-weight: 600;
+      padding: 13px 0 10px;
+      cursor: pointer;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      border-top: 2px solid transparent;
+      touch-action: manipulation;
+      transition: color 0.15s, border-color 0.15s;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 3px;
+    }
+
+    .tab-btn .tb-label { font-size: 9px; }
+
+    .tab-btn.active {
+      color: var(--blue);
+      border-top-color: var(--blue);
+    }
+
+    /* badge alertes */
+    .nav-badge {
+      display: none;
+      background: var(--red);
+      color: white;
+      font-size: 8px;
+      font-weight: 700;
+      padding: 1px 5px;
+      border-radius: 8px;
+      font-family: var(--mono);
+      line-height: 1.4;
+    }
+
+    .nav-badge.visible { display: inline-block; }
+
+    /* ---- Indicateurs de scan ---- */
+
+    #scan-bar {
+      flex: 0 0 auto;
+      height: 2px;
+      background: var(--border);
+      position: relative;
+      overflow: hidden;
+    }
+
+    #scan-progress {
+      position: absolute;
+      left: 0; top: 0; bottom: 0;
+      width: 0%;
+      background: linear-gradient(90deg, var(--blue), var(--green));
+      transition: width 0.4s ease;
+    }
+
+    /* ---- Transitions d'ecran ---- */
+
+    #screen-setup, #screen-app { transition: opacity 0.2s; }
+  </style>
+</head>
+<body>
+
+<!-- ================================================================
+     ECRAN SETUP
+================================================================ -->
+<div id="screen-setup">
+  <div class="setup-top">
+    <div class="setup-badge">
+      <div class="badge-dot"></div>
+      POC v1.0
+    </div>
+    <div class="setup-title">Veille<br><span>Bourse</span></div>
+    <div class="setup-desc">
+      Surveillance RSS + scoring IA en temps reel.<br>
+      Laissez l'app au premier plan pendant les heures de marche.
+    </div>
+  </div>
+
+  <div class="setup-body">
+
+    <div class="setup-section">
+      <div class="setup-section-title">Connexions requises</div>
+
+      <div class="fg">
+        <label for="s-key">Cle API Anthropic</label>
+        <input type="password" id="s-key" placeholder="sk-ant-...">
+        <div class="hint">Generer sur console.anthropic.com - compte gratuit disponible</div>
+      </div>
+
+      <div class="fg">
+        <label for="s-ntfy">Topic ntfy.sh</label>
+        <input type="text" id="s-ntfy" placeholder="mon-alerte-bourse-abc123">
+        <div class="hint">Nom unique de votre canal ntfy. A choisir difficile a deviner (il est public).</div>
+      </div>
+    </div>
+
+    <div class="setup-section">
+      <div class="setup-section-title">Titres surveilles</div>
+
+      <div class="fg">
+        <label for="s-tickers">Tickers</label>
+        <input type="text" id="s-tickers" value="IBM, NVDA, ETL, AIR, TSLA, MSFT">
+        <div class="hint">Symboles boursiers separes par des virgules (insensible a la casse)</div>
+      </div>
+
+      <div class="fg">
+        <label for="s-kw">Mots-cles sectoriels</label>
+        <textarea id="s-kw">quantum, satellite, milliard, billion, acquisition, fusion, contrat gouvernemental, government funding, LEO orbit</textarea>
+        <div class="hint">Mots-cles additionnels, separes par des virgules</div>
+      </div>
+    </div>
+
+    <div class="setup-section">
+      <div class="setup-section-title">Parametres</div>
+
+      <div class="fg-row">
+        <div class="fg">
+          <label for="s-thresh">Seuil d'alerte</label>
+          <input type="number" id="s-thresh" value="7" min="1" max="10">
+          <div class="hint">Score minimum sur 10</div>
+        </div>
+        <div class="fg">
+          <label for="s-interval">Intervalle (min)</label>
+          <input type="number" id="s-interval" value="5" min="1" max="60">
+          <div class="hint">Frequence de scan</div>
+        </div>
+      </div>
+    </div>
+
+    <button class="btn-cta" onclick="handleSetupSave()">Demarrer la surveillance</button>
+
+  </div>
+</div>
+
+<!-- ================================================================
+     ECRAN PRINCIPAL
+================================================================ -->
+<div id="screen-app" class="hidden">
+
+  <!-- En-tete -->
+  <div id="app-header">
+    <div class="header-r1">
+      <div class="app-name">Veille<span>.</span>Bourse</div>
+      <div class="status-pill">
+        <div id="status-dot" class="status-dot paused"></div>
+        <span id="status-txt">Init...</span>
+      </div>
+    </div>
+    <div id="countdown"></div>
+    <div id="header-stats">Demarrage...</div>
+  </div>
+
+  <!-- Barre de progression du scan -->
+  <div id="scan-bar"><div id="scan-progress"></div></div>
+
+  <!-- Controles -->
+  <div id="app-controls">
+    <button id="btn-toggle" class="btn-outline" onclick="handleToggle()" style="touch-action:manipulation">Pause</button>
+    <button class="btn-outline" onclick="handleManualCycle()" style="touch-action:manipulation">Cycle maintenant</button>
+  </div>
+
+  <!-- Panneau : Alertes -->
+  <div id="tab-alerts" class="tab-panel">
+    <div id="alerts-list"></div>
+  </div>
+
+  <!-- Panneau : Journal -->
+  <div id="tab-log" class="tab-panel hidden">
+    <div id="log-list"></div>
+  </div>
+
+  <!-- Panneau : Config -->
+  <div id="tab-config" class="tab-panel hidden">
+    <div class="config-block">
+      <div class="config-block-title">Connexions</div>
+      <div class="fg">
+        <label for="f-key">Cle API Anthropic</label>
+        <input type="password" id="f-key" placeholder="sk-ant-...">
+      </div>
+      <div class="fg">
+        <label for="f-ntfy">Topic ntfy.sh</label>
+        <input type="text" id="f-ntfy" placeholder="mon-alerte-bourse-xyz">
+      </div>
+    </div>
+
+    <div class="config-block">
+      <div class="config-block-title">Surveillance</div>
+      <div class="fg">
+        <label for="f-tickers">Tickers</label>
+        <input type="text" id="f-tickers" placeholder="IBM, NVDA, ETL">
+      </div>
+      <div class="fg">
+        <label for="f-kw">Mots-cles sectoriels</label>
+        <textarea id="f-kw"></textarea>
+      </div>
+      <div class="fg-row">
+        <div class="fg">
+          <label for="f-thresh">Seuil</label>
+          <input type="number" id="f-thresh" min="1" max="10">
+        </div>
+        <div class="fg">
+          <label for="f-interval">Intervalle (min)</label>
+          <input type="number" id="f-interval" min="1" max="60">
+        </div>
+      </div>
+      <button class="btn-cta" onclick="handleConfigSave()">Enregistrer</button>
+    </div>
+
+    <div class="config-block">
+      <div class="config-block-title">Tests et maintenance</div>
+      <button class="btn-outline full" onclick="handleTestNtfy()" style="touch-action:manipulation">Envoyer notification de test</button>
+      <div class="sep"></div>
+      <button class="btn-outline full danger" onclick="handleClearData()" style="touch-action:manipulation">Effacer alertes et historique</button>
+      <button class="btn-outline full danger" onclick="handleResetAll()" style="touch-action:manipulation">Reinitialiser la configuration</button>
+    </div>
+  </div>
+
+  <!-- Navigation -->
+  <nav id="app-nav">
+    <button id="btn-alerts" class="tab-btn active" onclick="showTab('alerts')" style="touch-action:manipulation">
+      <span class="tb-label">Alertes</span>
+      <span id="nav-badge" class="nav-badge"></span>
+    </button>
+    <button id="btn-log" class="tab-btn" onclick="showTab('log')" style="touch-action:manipulation">
+      <span class="tb-label">Journal</span>
+    </button>
+    <button id="btn-config" class="tab-btn" onclick="showTab('config')" style="touch-action:manipulation">
+      <span class="tb-label">Config</span>
+    </button>
+  </nav>
+
+</div>
+
+<script>
+// ====================================================================
+// CONSTANTES
+// ====================================================================
+
+var RSS_PROXY = "https://api.allorigins.win/raw?url=";
+
+var STATIC_FEEDS = [
+  {
+    id: "reuters_biz",
+    label: "Reuters Business",
+    url: "https://feeds.reuters.com/reuters/businessNews"
+  },
+  {
+    id: "marketwatch",
+    label: "MarketWatch",
+    url: "https://feeds.marketwatch.com/marketwatch/topstories/"
+  },
+  {
+    id: "globenewswire_tech",
+    label: "GlobeNewswire Tech",
+    url: "https://www.globenewswire.com/RssFeed/subjectcode/SCT-Technology/"
+  },
+  {
+    id: "businesswire",
+    label: "BusinessWire",
+    url: "https://feed.businesswire.com/rss/home/?rss=G22"
+  },
+  {
+    id: "lesechos",
+    label: "Les Echos Finance",
+    url: "https://www.lesechos.fr/rss/rss_finance.xml"
+  }
+];
+
+// Prompt systeme pour Claude - pas d'emoji, JSON brut attendu
+var SYSTEM_PROMPT =
+  "Tu es un analyste financier specialise dans l'evaluation de l'impact des nouvelles sur les cours boursiers.\n\n" +
+  "Pour chaque news fournie, tu dois repondre UNIQUEMENT avec un objet JSON valide.\n" +
+  "Aucun texte avant ou apres. Aucun bloc markdown. Juste le JSON brut.\n\n" +
+  "Format de reponse obligatoire :\n" +
+  "{\n" +
+  '  "impact_score": <entier de 0 a 10>,\n' +
+  '  "direction": "<hausse|baisse|neutre>",\n' +
+  '  "confiance": "<haute|moyenne|faible>",\n' +
+  '  "tickers_concernes": ["<TICKER1>"],\n' +
+  '  "raison": "<une seule phrase courte en francais, max 120 caracteres>"\n' +
+  "}\n\n" +
+  "Criteres de scoring :\n" +
+  "- 9-10 : evenement exceptionnel (acquisition majeure, contrat gouvernemental massif, faillite, fusion)\n" +
+  "- 7-8 : evenement significatif (contrat important, financement notable, partenariat strategique)\n" +
+  "- 5-6 : evenement moderement impactant (resultats en ligne, contrat mineur, nomination)\n" +
+  "- 3-4 : evenement faible impact (declaration standard, publication reguliere)\n" +
+  "- 0-2 : evenement sans impact cours (communique administratif, calendrier, avis divers)\n\n" +
+  "Pour tickers_concernes : symboles boursiers standard (IBM, ETL, AIR).\n" +
+  "Si aucun ticker identifiable : tableau vide.";
+
+// ====================================================================
+// ETAT
+// ====================================================================
+
+var cfg          = null;
+var isRunning    = false;
+var isCycling    = false;
+var cycleTimer   = null;
+var cntTimer     = null;
+var secsLeft     = 0;
+var alerts       = [];
+var logLines     = [];
+var seen         = new Set();
+var activeTab    = "alerts";
+var cycleCount   = 0;
+var totalScored  = 0;
+var totalAlerts  = 0;
+var newAlerts    = 0;
+var feedsDone    = 0;
+var feedsTotal   = 0;
+
+// ====================================================================
+// PERSISTENCE
+// ====================================================================
+
+function loadCfg() {
+  try { var r = localStorage.getItem("vb_cfg"); return r ? JSON.parse(r) : null; }
+  catch(e) { return null; }
+}
+
+function saveCfg(c) {
+  localStorage.setItem("vb_cfg", JSON.stringify(c));
+}
+
+function loadSeen() {
+  try { var r = localStorage.getItem("vb_seen"); return r ? new Set(JSON.parse(r)) : new Set(); }
+  catch(e) { return new Set(); }
+}
+
+function saveSeen() {
+  var arr = Array.from(seen).slice(-2000);
+  seen = new Set(arr);
+  localStorage.setItem("vb_seen", JSON.stringify(arr));
+}
+
+function loadAlerts() {
+  try { var r = localStorage.getItem("vb_alerts"); return r ? JSON.parse(r) : []; }
+  catch(e) { return []; }
+}
+
+function saveAlerts() {
+  localStorage.setItem("vb_alerts", JSON.stringify(alerts.slice(-100)));
+}
+
+// ====================================================================
+// UTILITAIRES
+// ====================================================================
+
+function hash(str) {
+  var h = 0;
+  for (var i = 0; i < str.length; i++) {
+    h = (Math.imul(31, h) + str.charCodeAt(i)) | 0;
+  }
+  return Math.abs(h).toString(36);
+}
+
+function stripHtml(html) {
+  if (!html) return "";
+  var d = document.createElement("div");
+  d.innerHTML = html;
+  return (d.textContent || d.innerText || "").replace(/\s+/g, " ").trim();
+}
+
+function escHtml(str) {
+  if (!str) return "";
+  return String(str)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+
+function safeUrl(url) {
+  if (!url) return "";
+  var s = String(url).trim();
+  if (s.startsWith("http://") || s.startsWith("https://")) return s;
+  return "";
+}
+
+function fmtHHMM(iso) {
+  if (!iso) return "";
+  try {
+    var d = new Date(iso);
+    return d.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" });
+  } catch(e) { return ""; }
+}
+
+function addLog(level, msg) {
+  logLines.unshift({
+    time: new Date().toLocaleTimeString("fr-FR"),
+    level: level,
+    msg: msg
+  });
+  if (logLines.length > 300) logLines.length = 300;
+  if (activeTab === "log") renderLog();
+}
+
+// ====================================================================
+// FLUX RSS
+// ====================================================================
+
+function buildDynamicFeeds(tickers) {
+  var feeds = [];
+  tickers.forEach(function(t) {
+    feeds.push({
+      id: "yahoo_" + t,
+      label: "Yahoo Finance " + t,
+      url: "https://finance.yahoo.com/rss/headline?s=" + t
+    });
+    feeds.push({
+      id: "gnews_" + t,
+      label: "Google News " + t,
+      url: "https://news.google.com/rss/search?q=" +
+           encodeURIComponent(t + " action bourse") +
+           "&hl=fr&gl=FR&ceid=FR:fr"
+    });
+  });
+  return feeds;
+}
+
+async function fetchFeed(feed) {
+  var url = RSS_PROXY + encodeURIComponent(feed.url);
+  var resp = await fetch(url, { signal: AbortSignal.timeout(12000) });
+  if (!resp.ok) throw new Error("HTTP " + resp.status);
+  var text = await resp.text();
+  return parseXml(text, feed);
+}
+
+function parseXml(xmlText, feed) {
+  var parser = new DOMParser();
+  var doc = parser.parseFromString(xmlText, "text/xml");
+  var items = [];
+
+  // Format RSS 2.0
+  var rssItems = doc.querySelectorAll("item");
+  if (rssItems.length > 0) {
+    rssItems.forEach(function(el) {
+      var title = (el.querySelector("title") || {}).textContent;
+      title = title ? title.trim() : "";
+      if (!title || title === "CDATA") return;
+      var linkEl = el.querySelector("link");
+      var link = "";
+      if (linkEl) {
+        link = (linkEl.textContent || "").trim() ||
+               (linkEl.getAttribute("href") || "").trim();
+      }
+      var rawDesc = (el.querySelector("description") || {}).textContent || "";
+      var summary = stripHtml(rawDesc).slice(0, 600);
+      var published = ((el.querySelector("pubDate") || {}).textContent || "").trim();
+      items.push({
+        id: hash(title + feed.id),
+        source_id: feed.id,
+        source_label: feed.label,
+        title: title,
+        summary: summary,
+        link: link,
+        published: published
+      });
+    });
+    return items;
+  }
+
+  // Format Atom
+  var entries = doc.querySelectorAll("entry");
+  entries.forEach(function(el) {
+    var title = (el.querySelector("title") || {}).textContent;
+    title = title ? title.trim() : "";
+    if (!title) return;
+    var linkEl = el.querySelector("link");
+    var link = "";
+    if (linkEl) {
+      link = (linkEl.getAttribute("href") || "").trim() ||
+             (linkEl.textContent || "").trim();
+    }
+    var rawContent =
+      ((el.querySelector("summary") || {}).textContent || "") ||
+      ((el.querySelector("content") || {}).textContent || "");
+    var summary = stripHtml(rawContent).slice(0, 600);
+    var pubEl = el.querySelector("published") || el.querySelector("updated");
+    var published = pubEl ? pubEl.textContent.trim() : "";
+    items.push({
+      id: hash(title + feed.id),
+      source_id: feed.id,
+      source_label: feed.label,
+      title: title,
+      summary: summary,
+      link: link,
+      published: published
+    });
+  });
+
+  return items;
+}
+
+// ====================================================================
+// PRE-FILTRE
+// ====================================================================
+
+function preFilter(items) {
+  var tickers = cfg.tickers.map(function(t) { return t.toLowerCase(); });
+  var kws     = cfg.keywords.map(function(k) { return k.toLowerCase(); });
+  return items.filter(function(item) {
+    var text = (item.title + " " + item.summary).toLowerCase();
+    if (tickers.some(function(t) { return text.indexOf(t) !== -1; })) return true;
+    if (kws.some(function(k) { return k.length > 2 && text.indexOf(k) !== -1; })) return true;
+    return false;
+  });
+}
+
+// ====================================================================
+// SCORING CLAUDE
+// ====================================================================
+
+async function scoreItem(item) {
+  var userMsg =
+    "Titre: " + item.title +
+    "\nResume: " + item.summary.slice(0, 400) +
+    "\nSource: " + item.source_label;
+
+  var resp = await fetch("https://api.anthropic.com/v1/messages", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "x-api-key": cfg.anthropic_key,
+      "anthropic-version": "2023-06-01",
+      "anthropic-dangerous-direct-browser-access": "true"
+    },
+    body: JSON.stringify({
+      model: "claude-haiku-4-5-20251001",
+      max_tokens: 400,
+      system: SYSTEM_PROMPT,
+      messages: [{ role: "user", content: userMsg }]
+    }),
+    signal: AbortSignal.timeout(25000)
+  });
+
+  if (!resp.ok) {
+    var errData = {};
+    try { errData = await resp.json(); } catch(e2) {}
+    throw new Error("API " + resp.status + " " + ((errData.error || {}).message || ""));
+  }
+
+  var data = await resp.json();
+  var text = ((data.content || [])[0] || {}).text || "";
+  // Nettoyage des backticks eventuels
+  text = text.replace(/```json\s*/gi, "").replace(/```\s*/g, "").trim();
+  return JSON.parse(text);
+}
+
+// ====================================================================
+// NTFY
+// ====================================================================
+
+async function sendNtfy(item, score) {
+  var dir = score.direction === "hausse" ? "HAUSSE" :
+            score.direction === "baisse" ? "BAISSE" : "NEUTRE";
+  var tickers = (score.tickers_concernes || []).join(", ") || "N/A";
+  var priority = score.impact_score >= 9 ? "urgent" :
+                 score.impact_score >= 7 ? "high" : "default";
+
+  var titleHdr = "[" + dir + "] " + tickers + " - Score " + score.impact_score + "/10";
+  var body =
+    (score.raison || "") +
+    "\n\nSource: " + item.source_label +
+    "\nTitre: " + item.title.slice(0, 150) +
+    "\nConfiance: " + (score.confiance || "N/A") +
+    "\n\n" + (safeUrl(item.link) || "");
+
+  var resp = await fetch("https://ntfy.sh/" + cfg.ntfy_topic, {
+    method: "POST",
+    headers: {
+      "Title": titleHdr,
+      "Priority": priority,
+      "Content-Type": "text/plain; charset=utf-8"
+    },
+    body: body,
+    signal: AbortSignal.timeout(10000)
+  });
+  return resp.ok;
+}
+
+// ====================================================================
+// CYCLE PRINCIPAL
+// ====================================================================
+
+async function runCycle() {
+  if (isCycling) return;
+  isCycling = true;
+  cycleCount++;
+  addLog("INFO", "Debut cycle " + cycleCount);
+  updateHeader();
+  setScanProgress(0);
+
+  var allFeeds = STATIC_FEEDS.concat(buildDynamicFeeds(cfg.tickers));
+  feedsTotal = allFeeds.length;
+  feedsDone  = 0;
+
+  var toScore = [];
+
+  for (var fi = 0; fi < allFeeds.length; fi++) {
+    var feed = allFeeds[fi];
+    try {
+      var items = await fetchFeed(feed);
+      var fresh = items.filter(function(it) { return !seen.has(it.id); });
+      fresh.forEach(function(it) { seen.add(it.id); });
+      var passed = preFilter(fresh);
+      if (passed.length > 0) {
+        addLog("INFO", feed.label + " : " + fresh.length + " nouveaux, " + passed.length + " passes filtre");
+      }
+      toScore = toScore.concat(passed);
+    } catch(err) {
+      addLog("WARN", feed.label + " : " + err.message);
+    }
+    feedsDone++;
+    setScanProgress(Math.round((feedsDone / feedsTotal) * 60));
+  }
+
+  saveSeen();
+  addLog("INFO", "Collecte terminee - " + toScore.length + " items a scorer");
+
+  var scoreStep = toScore.length > 0 ? 40 / toScore.length : 0;
+
+  for (var si = 0; si < toScore.length; si++) {
+    var item = toScore[si];
+    try {
+      var score = await scoreItem(item);
+      totalScored++;
+      setScanProgress(60 + Math.round((si + 1) * scoreStep));
+
+      if (score.impact_score >= cfg.threshold) {
+        var alert = {
+          id: item.id,
+          time: new Date().toISOString(),
+          title: item.title,
+          link: item.link,
+          source_label: item.source_label,
+          impact_score: score.impact_score,
+          direction: score.direction,
+          confiance: score.confiance,
+          tickers_concernes: score.tickers_concernes || [],
+          raison: score.raison || ""
+        };
+        alerts.unshift(alert);
+        totalAlerts++;
+        newAlerts++;
+        saveAlerts();
+
+        if (activeTab === "alerts") {
+          renderAlerts();
+        } else {
+          updateNavBadge();
+        }
+
+        updateHeader();
+
+        try {
+          var ok = await sendNtfy(item, score);
+          addLog(ok ? "INFO" : "WARN",
+            "ntfy " + (ok ? "OK" : "echec") +
+            " [" + score.direction.toUpperCase() + " " + score.impact_score + "/10] " +
+            item.title.slice(0, 55)
+          );
+        } catch(ntfyErr) {
+          addLog("WARN", "ntfy echec : " + ntfyErr.message);
+        }
+      }
+    } catch(scoreErr) {
+      addLog("WARN", "Score echec : " + scoreErr.message + " | " + item.title.slice(0, 45));
+    }
+  }
+
+  setScanProgress(100);
+  setTimeout(function() { setScanProgress(0); }, 600);
+
+  isCycling = false;
+  addLog("INFO",
+    "Fin cycle " + cycleCount +
+    " - alertes total : " + totalAlerts +
+    " | scores total : " + totalScored
+  );
+  scheduleNext();
+  updateHeader();
+  if (activeTab === "log") renderLog();
+}
+
+function scheduleNext() {
+  clearTimeout(cycleTimer);
+  clearInterval(cntTimer);
+  secsLeft = cfg.interval_min * 60;
+
+  cntTimer = setInterval(function() {
+    if (secsLeft > 0) { secsLeft--; updateCountdown(); }
+  }, 1000);
+
+  cycleTimer = setTimeout(function() {
+    if (isRunning && document.visibilityState === "visible") {
+      runCycle();
+    }
+  }, cfg.interval_min * 60 * 1000);
+}
+
+function setScanProgress(pct) {
+  var el = document.getElementById("scan-progress");
+  if (el) el.style.width = pct + "%";
+}
+
+// ====================================================================
+// INTERFACE - MISE A JOUR
+// ====================================================================
+
+function updateHeader() {
+  var dot  = document.getElementById("status-dot");
+  var txt  = document.getElementById("status-txt");
+  var stat = document.getElementById("header-stats");
+  var btn  = document.getElementById("btn-toggle");
+
+  if (!isRunning) {
+    dot.className = "status-dot paused";
+    txt.textContent = "En pause";
+    if (btn) btn.textContent = "Reprendre";
+  } else if (isCycling) {
+    dot.className = "status-dot cycling";
+    txt.textContent = "Scan en cours...";
+    if (btn) btn.textContent = "Pause";
+  } else {
+    dot.className = "status-dot active";
+    txt.textContent = "Actif";
+    if (btn) btn.textContent = "Pause";
+  }
+
+  if (stat) {
+    stat.textContent =
+      totalAlerts + " alertes  |  " +
+      totalScored + " scores  |  cycle " + cycleCount;
+  }
+
+  updateCountdown();
+}
+
+function updateCountdown() {
+  var el = document.getElementById("countdown");
+  if (!el) return;
+  if (!isRunning || isCycling) { el.textContent = ""; return; }
+  var m = Math.floor(secsLeft / 60);
+  var s = secsLeft % 60;
+  el.textContent = "Prochain cycle dans " + m + "m " + String(s).padStart(2, "0") + "s";
+}
+
+function updateNavBadge() {
+  var badge = document.getElementById("nav-badge");
+  if (!badge) return;
+  if (newAlerts > 0 && activeTab !== "alerts") {
+    badge.textContent = newAlerts > 9 ? "9+" : String(newAlerts);
+    badge.classList.add("visible");
+  } else {
+    badge.classList.remove("visible");
+  }
+}
+
+function renderAlerts() {
+  var container = document.getElementById("alerts-list");
+  if (!container) return;
+
+  if (alerts.length === 0) {
+    container.innerHTML =
+      '<div class="empty-state">' +
+      '<strong>Aucune alerte</strong>' +
+      "La surveillance est active.<br>" +
+      "Les alertes apparaissent ici des qu'une news<br>" +
+      "impactante depasse le seuil de score configure." +
+      '</div>';
+    return;
+  }
+
+  container.innerHTML = alerts.map(function(a) {
+    var dirClass =
+      a.direction === "hausse" ? "dir-up" :
+      a.direction === "baisse" ? "dir-down" : "dir-neutral";
+    var dirLabel =
+      a.direction === "hausse" ? "HAUSSE" :
+      a.direction === "baisse" ? "BAISSE" : "NEUTRE";
+    var tickers = (a.tickers_concernes || []).join(" | ");
+    var timeStr = fmtHHMM(a.time);
+    var link = safeUrl(a.link);
+
+    return '<div class="alert-card ' + dirClass + '">' +
+      '<div class="alert-inner">' +
+        '<div class="alert-top">' +
+          '<div class="alert-score-block">' +
+            '<div class="alert-score-num">' + a.impact_score + '</div>' +
+            '<div class="alert-score-denom">/10</div>' +
+          '</div>' +
+          '<div class="alert-meta">' +
+            '<div class="alert-dir-badge">' + dirLabel + '</div>' +
+            (tickers ? '<div class="alert-tickers">' + escHtml(tickers) + '</div>' : '') +
+            '<div class="alert-confiance">confiance : ' + escHtml(a.confiance || 'N/A') + '</div>' +
+          '</div>' +
+          '<div class="alert-time-lbl">' + timeStr + '</div>' +
+        '</div>' +
+        '<div class="alert-raison">' + escHtml(a.raison) + '</div>' +
+        '<div class="alert-title-txt">' + escHtml(a.title) + '</div>' +
+      '</div>' +
+      '<div class="alert-footer">' +
+        '<div class="alert-source-lbl">' + escHtml(a.source_label) + '</div>' +
+        (link ? '<a href="' + link + '" target="_blank" class="alert-link-btn">Lire</a>' : '') +
+      '</div>' +
+    '</div>';
+  }).join("");
+}
+
+function renderLog() {
+  var container = document.getElementById("log-list");
+  if (!container) return;
+
+  if (logLines.length === 0) {
+    container.innerHTML = '<div class="empty-state">Aucune activite enregistree.</div>';
+    return;
+  }
+
+  container.innerHTML = logLines.map(function(e) {
+    var cls =
+      e.level === "WARN"  ? "log-warn" :
+      e.level === "ERROR" ? "log-error" : "log-info";
+    return '<div class="log-entry ' + cls + '">' +
+      '<span class="log-time">' + e.time + '</span>' +
+      '<span class="log-lvl">' + e.level + '</span>' +
+      '<span class="log-msg">' + escHtml(e.msg) + '</span>' +
+    '</div>';
+  }).join("");
+}
+
+// ====================================================================
+// NAVIGATION PAR ONGLETS
+// ====================================================================
+
+function showTab(tab) {
+  activeTab = tab;
+
+  ["alerts", "log", "config"].forEach(function(t) {
+    var panel = document.getElementById("tab-" + t);
+    var btn   = document.getElementById("btn-" + t);
+    if (panel) {
+      if (t === tab) panel.classList.remove("hidden");
+      else           panel.classList.add("hidden");
+    }
+    if (btn) {
+      if (t === tab) btn.classList.add("active");
+      else           btn.classList.remove("active");
+    }
+  });
+
+  if (tab === "alerts") {
+    newAlerts = 0;
+    updateNavBadge();
+    renderAlerts();
+  }
+  if (tab === "log") renderLog();
+  if (tab === "config") fillConfigForm();
+}
+
+// ====================================================================
+// GESTION DE LA CONFIGURATION
+// ====================================================================
+
+function readForm(p) {
+  var apiKey    = (document.getElementById(p + "key") || {}).value;
+  var ntfyTopic = (document.getElementById(p + "ntfy") || {}).value;
+  var tickersRaw = (document.getElementById(p + "tickers") || {}).value;
+  var kwRaw     = (document.getElementById(p + "kw") || {}).value;
+  var thresh    = parseInt((document.getElementById(p + "thresh") || {}).value);
+  var interval  = parseInt((document.getElementById(p + "interval") || {}).value);
+
+  apiKey    = (apiKey || "").trim();
+  ntfyTopic = (ntfyTopic || "").trim();
+  tickersRaw = (tickersRaw || "").trim();
+
+  if (!apiKey)    { alert("La cle API Anthropic est obligatoire."); return null; }
+  if (!ntfyTopic) { alert("Le topic ntfy.sh est obligatoire.");     return null; }
+  if (!tickersRaw){ alert("Saisissez au moins un ticker.");          return null; }
+
+  return {
+    anthropic_key: apiKey,
+    ntfy_topic: ntfyTopic,
+    tickers: tickersRaw.split(",").map(function(t) { return t.trim().toUpperCase(); }).filter(Boolean),
+    keywords: (kwRaw || "").split(",").map(function(k) { return k.trim().toLowerCase(); }).filter(Boolean),
+    threshold: isNaN(thresh) ? 7 : Math.max(1, Math.min(10, thresh)),
+    interval_min: isNaN(interval) ? 5 : Math.max(1, Math.min(60, interval))
+  };
+}
+
+function handleSetupSave() {
+  var c = readForm("s-");
+  if (!c) return;
+  cfg = c;
+  saveCfg(cfg);
+  showAppScreen();
+  startPolling();
+}
+
+function handleConfigSave() {
+  var c = readForm("f-");
+  if (!c) return;
+  cfg = c;
+  saveCfg(cfg);
+  addLog("INFO", "Config mise a jour - tickers : " + cfg.tickers.join(", "));
+  // Message discret dans le log plutot qu'un alert()
+  var btn = document.querySelector('#tab-config .btn-cta');
+  if (btn) {
+    var prev = btn.textContent;
+    btn.textContent = "Enregistre !";
+    setTimeout(function() { btn.textContent = prev; }, 1500);
+  }
+}
+
+function fillConfigForm() {
+  if (!cfg) return;
+  var set = function(id, val) {
+    var el = document.getElementById(id);
+    if (el) el.value = val;
+  };
+  set("f-key",      cfg.anthropic_key || "");
+  set("f-ntfy",     cfg.ntfy_topic || "");
+  set("f-tickers",  (cfg.tickers || []).join(", "));
+  set("f-kw",       (cfg.keywords || []).join(", "));
+  set("f-thresh",   cfg.threshold != null ? cfg.threshold : 7);
+  set("f-interval", cfg.interval_min != null ? cfg.interval_min : 5);
+}
+
+async function handleTestNtfy() {
+  if (!cfg || !cfg.ntfy_topic) {
+    alert("Configurez d'abord le topic ntfy.");
+    return;
+  }
+  try {
+    var resp = await fetch("https://ntfy.sh/" + cfg.ntfy_topic, {
+      method: "POST",
+      headers: {
+        "Title": "Test Veille Bourse",
+        "Priority": "default",
+        "Content-Type": "text/plain; charset=utf-8"
+      },
+      body: "Notification de test - le systeme de veille fonctionne correctement.",
+      signal: AbortSignal.timeout(10000)
+    });
+    if (resp.ok) {
+      addLog("INFO", "Test ntfy OK - topic : " + cfg.ntfy_topic);
+      alert("Notification envoyee ! Verifiez votre iPhone.");
+    } else {
+      addLog("WARN", "Test ntfy HTTP " + resp.status);
+      alert("Echec ntfy : HTTP " + resp.status);
+    }
+  } catch(err) {
+    addLog("WARN", "Test ntfy erreur : " + err.message);
+    alert("Erreur : " + err.message);
+  }
+}
+
+function handleClearData() {
+  if (!confirm("Effacer toutes les alertes et l'historique ?\n(La configuration est conservee)")) return;
+  alerts = []; logLines = []; seen = new Set();
+  totalScored = 0; totalAlerts = 0; newAlerts = 0; cycleCount = 0;
+  localStorage.removeItem("vb_alerts");
+  localStorage.removeItem("vb_seen");
+  renderAlerts();
+  updateHeader();
+  addLog("INFO", "Donnees effacees");
+}
+
+function handleResetAll() {
+  if (!confirm("Reinitialiser toute la configuration ?\nL'application retournera a l'ecran de setup.")) return;
+  localStorage.clear();
+  location.reload();
+}
+
+// ====================================================================
+// CONTROLES DE POLLING
+// ====================================================================
+
+function startPolling() {
+  isRunning = true;
+  if (document.getElementById("btn-toggle"))
+    document.getElementById("btn-toggle").textContent = "Pause";
+  addLog("INFO",
+    "Demarrage - tickers : " + cfg.tickers.join(", ") +
+    " | seuil : " + cfg.threshold + "/10" +
+    " | intervalle : " + cfg.interval_min + " min"
+  );
+  updateHeader();
+  runCycle();
+}
+
+function handleToggle() {
+  if (isRunning) {
+    isRunning = false;
+    clearTimeout(cycleTimer);
+    clearInterval(cntTimer);
+    secsLeft = 0;
+    addLog("INFO", "Surveillance suspendue par l'utilisateur");
+    updateHeader();
+  } else {
+    isRunning = true;
+    addLog("INFO", "Surveillance reprise");
+    runCycle();
+  }
+}
+
+function handleManualCycle() {
+  if (isCycling) { alert("Un cycle est deja en cours."); return; }
+  clearTimeout(cycleTimer);
+  clearInterval(cntTimer);
+  runCycle();
+}
+
+// ====================================================================
+// NAVIGATION ENTRE ECRANS
+// ====================================================================
+
+function showAppScreen() {
+  document.getElementById("screen-setup").classList.add("hidden");
+  document.getElementById("screen-app").classList.remove("hidden");
+  showTab("alerts");
+}
+
+// ====================================================================
+// VISIBILITE - reprise au retour au premier plan
+// ====================================================================
+
+document.addEventListener("visibilitychange", function() {
+  if (document.visibilityState === "visible" && isRunning && !isCycling) {
+    if (secsLeft <= 0) {
+      addLog("INFO", "Retour au premier plan - cycle immediat");
+      clearTimeout(cycleTimer);
+      clearInterval(cntTimer);
+      runCycle();
+    }
+  }
+});
+
+// ====================================================================
+// INITIALISATION
+// ====================================================================
+
+(function init() {
+  cfg    = loadCfg();
+  seen   = loadSeen();
+  alerts = loadAlerts();
+
+  if (cfg) {
+    showAppScreen();
+    updateHeader();
+    renderAlerts();
+    startPolling();
+  }
+  // Sinon : l'ecran setup reste visible (etat par defaut du HTML)
+})();
+</script>
+</body>
+</html>
