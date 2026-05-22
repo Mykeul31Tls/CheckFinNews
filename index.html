@@ -865,6 +865,11 @@ var RSS_PROXIES = [
   "https://api.allorigins.win/raw?url="
 ];
 
+// Nombre maximum d'items RSS a conserver par flux (les plus recents seulement)
+var MAX_ITEMS_PER_FEED = 5;
+// Nombre maximum d'appels Claude par cycle - protection cout API
+var MAX_SCORE_PER_CYCLE = 15;
+
 // Flux statiques - bases sur Google News pour la fiabilite maximale via proxy
 // + quelques flux RSS libres qui passent les proxies CORS
 var STATIC_FEEDS = [
@@ -1271,9 +1276,11 @@ async function runCycle() {
       var items = await fetchFeed(feed);
       var fresh = items.filter(function(it) { return !seen.has(it.id); });
       fresh.forEach(function(it) { seen.add(it.id); });
-      var passed = preFilter(fresh);
+      // Limiter aux MAX_ITEMS_PER_FEED items les plus recents par flux
+      var freshLimited = fresh.slice(0, MAX_ITEMS_PER_FEED);
+      var passed = preFilter(freshLimited);
       if (passed.length > 0) {
-        addLog("INFO", feed.label + " : " + fresh.length + " nouveaux, " + passed.length + " passes filtre");
+        addLog("INFO", feed.label + " : " + fresh.length + " nouveaux, " + passed.length + " passes filtre (limite " + MAX_ITEMS_PER_FEED + "/flux)");
       }
       toScore = toScore.concat(passed);
     } catch(err) {
@@ -1284,7 +1291,17 @@ async function runCycle() {
   }
 
   saveSeen();
-  addLog("INFO", "Collecte terminee - " + toScore.length + " items a scorer");
+
+  // Tronquer a MAX_SCORE_PER_CYCLE pour controler le cout API
+  if (toScore.length > MAX_SCORE_PER_CYCLE) {
+    addLog("INFO",
+      "Collecte terminee - " + toScore.length + " items eligibles, " +
+      "limite a " + MAX_SCORE_PER_CYCLE + " appels API par cycle"
+    );
+    toScore = toScore.slice(0, MAX_SCORE_PER_CYCLE);
+  } else {
+    addLog("INFO", "Collecte terminee - " + toScore.length + " items a scorer");
+  }
 
   var scoreStep = toScore.length > 0 ? 40 / toScore.length : 0;
 
