@@ -748,6 +748,11 @@
           <div class="hint">Frequence de scan</div>
         </div>
       </div>
+      <div class="fg">
+        <label for="s-age">Age max des articles (heures)</label>
+        <input type="number" id="s-age" value="6" min="1" max="168">
+        <div class="hint">Ignorer les articles plus vieux que cette duree (1 = 1h, 24 = 1 jour, 168 = 1 semaine)</div>
+      </div>
     </div>
 
     <button class="btn-cta" onclick="handleSetupSave()">Demarrer la surveillance</button>
@@ -826,6 +831,10 @@
           <input type="number" id="f-interval" min="1" max="60">
         </div>
       </div>
+      <div class="fg">
+        <label for="f-age">Age max des articles (heures)</label>
+        <input type="number" id="f-age" min="1" max="168">
+      </div>
       <button class="btn-cta" onclick="handleConfigSave()">Enregistrer</button>
     </div>
 
@@ -869,6 +878,8 @@ var RSS_PROXIES = [
 var MAX_ITEMS_PER_FEED = 5;
 // Nombre maximum d'appels Claude par cycle - protection cout API
 var MAX_SCORE_PER_CYCLE = 15;
+// Age maximum des articles en heures - ignorer tout ce qui est plus vieux
+var MAX_AGE_HOURS = 6;
 
 // Flux statiques - bases sur Google News pour la fiabilite maximale via proxy
 // + quelques flux RSS libres qui passent les proxies CORS
@@ -1180,6 +1191,19 @@ function preFilter(items) {
   });
 }
 
+// Filtre par age : rejette les articles plus vieux que MAX_AGE_HOURS
+// Si la date est absente ou non parsable, l'article est conserve par precaution
+function filterByAge(items) {
+  var hours = (cfg && cfg.max_age_hours) ? cfg.max_age_hours : MAX_AGE_HOURS;
+  var cutoff = Date.now() - hours * 3600 * 1000;
+  return items.filter(function(item) {
+    if (!item.published) return true;
+    var ts = Date.parse(item.published);
+    if (isNaN(ts)) return true;
+    return ts >= cutoff;
+  });
+}
+
 // ====================================================================
 // SCORING CLAUDE
 // ====================================================================
@@ -1277,10 +1301,17 @@ async function runCycle() {
       var fresh = items.filter(function(it) { return !seen.has(it.id); });
       fresh.forEach(function(it) { seen.add(it.id); });
       // Limiter aux MAX_ITEMS_PER_FEED items les plus recents par flux
-      var freshLimited = fresh.slice(0, MAX_ITEMS_PER_FEED);
+      // Filtrer d'abord par age, puis limiter, puis pre-filtre thematique
+      var recentOnly = filterByAge(fresh);
+      var freshLimited = recentOnly.slice(0, MAX_ITEMS_PER_FEED);
       var passed = preFilter(freshLimited);
-      if (passed.length > 0) {
-        addLog("INFO", feed.label + " : " + fresh.length + " nouveaux, " + passed.length + " passes filtre (limite " + MAX_ITEMS_PER_FEED + "/flux)");
+      var skippedOld = fresh.length - recentOnly.length;
+      if (skippedOld > 0 || passed.length > 0) {
+        addLog("INFO",
+          feed.label + " : " + fresh.length + " nouveaux" +
+          (skippedOld > 0 ? " (" + skippedOld + " trop anciens ignores)" : "") +
+          (passed.length > 0 ? ", " + passed.length + " passes filtre" : ", 0 passes filtre")
+        );
       }
       toScore = toScore.concat(passed);
     } catch(err) {
@@ -1554,6 +1585,7 @@ function readForm(p) {
   var kwRaw     = (document.getElementById(p + "kw") || {}).value;
   var thresh    = parseInt((document.getElementById(p + "thresh") || {}).value);
   var interval  = parseInt((document.getElementById(p + "interval") || {}).value);
+  var ageHours  = parseInt((document.getElementById(p + "age") || {}).value);
 
   apiKey    = (apiKey || "").trim();
   ntfyTopic = (ntfyTopic || "").trim();
@@ -1569,7 +1601,8 @@ function readForm(p) {
     tickers: tickersRaw.split(",").map(function(t) { return t.trim().toUpperCase(); }).filter(Boolean),
     keywords: (kwRaw || "").split(",").map(function(k) { return k.trim().toLowerCase(); }).filter(Boolean),
     threshold: isNaN(thresh) ? 7 : Math.max(1, Math.min(10, thresh)),
-    interval_min: isNaN(interval) ? 5 : Math.max(1, Math.min(60, interval))
+    interval_min: isNaN(interval) ? 5 : Math.max(1, Math.min(60, interval)),
+    max_age_hours: isNaN(ageHours) ? 6 : Math.max(1, Math.min(168, ageHours))
   };
 }
 
@@ -1609,6 +1642,7 @@ function fillConfigForm() {
   set("f-kw",       (cfg.keywords || []).join(", "));
   set("f-thresh",   cfg.threshold != null ? cfg.threshold : 7);
   set("f-interval", cfg.interval_min != null ? cfg.interval_min : 5);
+  set("f-age",      cfg.max_age_hours != null ? cfg.max_age_hours : 6);
 }
 
 async function handleTestNtfy() {
