@@ -770,10 +770,17 @@
           <div class="hint">Frequence de scan</div>
         </div>
       </div>
-      <div class="fg">
-        <label for="s-age">Age max des articles (heures)</label>
-        <input type="number" id="s-age" value="6" min="1" max="168">
-        <div class="hint">Ignorer les articles plus vieux que cette duree (1 = 1h, 24 = 1 jour, 168 = 1 semaine)</div>
+      <div class="fg-row">
+        <div class="fg">
+          <label for="s-age">Age max articles (h)</label>
+          <input type="number" id="s-age" value="6" min="1" max="168">
+          <div class="hint">1h a 168h (1 semaine)</div>
+        </div>
+        <div class="fg">
+          <label for="s-maxalerts">Alertes max/cycle</label>
+          <input type="number" id="s-maxalerts" value="3" min="1" max="20">
+          <div class="hint">Anti-flood (1 a 20)</div>
+        </div>
       </div>
     </div>
 
@@ -853,9 +860,15 @@
           <input type="number" id="f-interval" min="1" max="60">
         </div>
       </div>
-      <div class="fg">
-        <label for="f-age">Age max des articles (heures)</label>
-        <input type="number" id="f-age" min="1" max="168">
+      <div class="fg-row">
+        <div class="fg">
+          <label for="f-age">Age max articles (h)</label>
+          <input type="number" id="f-age" min="1" max="168">
+        </div>
+        <div class="fg">
+          <label for="f-maxalerts">Alertes max/cycle</label>
+          <input type="number" id="f-maxalerts" min="1" max="20">
+        </div>
       </div>
       <button class="btn-cta" onclick="handleConfigSave()">Enregistrer</button>
     </div>
@@ -902,6 +915,11 @@ var MAX_ITEMS_PER_FEED = 5;
 var MAX_SCORE_PER_CYCLE = 15;
 // Age maximum des articles en heures - ignorer tout ce qui est plus vieux
 var MAX_AGE_HOURS = 6;
+// Nombre maximum de nouvelles alertes par cycle (anti-flood)
+var MAX_ALERTS_PER_CYCLE = 3;
+// Fenetre de deduplication semantique en minutes :
+// une alerte avec memes tickers + meme direction dans cette fenetre = doublon
+var DEDUP_WINDOW_MIN = 120;
 
 // Flux statiques - bases sur Google News pour la fiabilite maximale via proxy
 // + quelques flux RSS libres qui passent les proxies CORS
@@ -1302,6 +1320,21 @@ async function sendNtfy(item, score) {
 // CYCLE PRINCIPAL
 // ====================================================================
 
+// Verifie si une alerte semantiquement identique existe deja dans la fenetre de dedup
+// Critere : meme direction + au moins un ticker commun + publiee dans DEDUP_WINDOW_MIN
+function isAlertDuplicate(score) {
+  if (!score.tickers_concernes || score.tickers_concernes.length === 0) return false;
+  var cutoff = Date.now() - DEDUP_WINDOW_MIN * 60 * 1000;
+  return alerts.some(function(a) {
+    if (a.direction !== score.direction) return false;
+    if (Date.parse(a.time) < cutoff) return false;
+    var commonTicker = (score.tickers_concernes || []).some(function(t) {
+      return (a.tickers_concernes || []).indexOf(t) !== -1;
+    });
+    return commonTicker;
+  });
+}
+
 async function runCycle() {
   if (isCycling) return;
   isCycling = true;
@@ -1357,6 +1390,7 @@ async function runCycle() {
   }
 
   var scoreStep = toScore.length > 0 ? 40 / toScore.length : 0;
+  var alertsThisCycle = 0;
 
   for (var si = 0; si < toScore.length; si++) {
     var item = toScore[si];
@@ -1366,6 +1400,23 @@ async function runCycle() {
       setScanProgress(60 + Math.round((si + 1) * scoreStep));
 
       if (score.impact_score >= cfg.threshold) {
+        // Garde-fou 1 : plafond d'alertes par cycle
+        var _maxAlerts = (cfg && cfg.max_alerts_per_cycle) ? cfg.max_alerts_per_cycle : MAX_ALERTS_PER_CYCLE;
+        if (alertsThisCycle >= _maxAlerts) {
+          addLog("INFO",
+            "Plafond alertes/cycle atteint (" + _maxAlerts + ") - ignore : " +
+            item.title.slice(0, 50)
+          );
+          continue;
+        }
+        // Garde-fou 2 : deduplication semantique
+        if (isAlertDuplicate(score)) {
+          addLog("INFO",
+            "Doublon semantique ignore [" + (score.tickers_concernes || []).join(",") + "] : " +
+            item.title.slice(0, 50)
+          );
+          continue;
+        }
         var alert = {
           id: item.id,
           time: new Date().toISOString(),
@@ -1379,6 +1430,7 @@ async function runCycle() {
           raison: score.raison || ""
         };
         alerts.unshift(alert);
+        alertsThisCycle++;
         totalAlerts++;
         newAlerts++;
         saveAlerts();
@@ -1607,7 +1659,8 @@ function readForm(p) {
   var kwRaw     = (document.getElementById(p + "kw") || {}).value;
   var thresh    = parseInt((document.getElementById(p + "thresh") || {}).value);
   var interval  = parseInt((document.getElementById(p + "interval") || {}).value);
-  var ageHours  = parseInt((document.getElementById(p + "age") || {}).value);
+  var ageHours   = parseInt((document.getElementById(p + "age") || {}).value);
+  var maxAlerts  = parseInt((document.getElementById(p + "maxalerts") || {}).value);
 
   apiKey    = (apiKey || "").trim();
   ntfyTopic = (ntfyTopic || "").trim();
@@ -1624,7 +1677,8 @@ function readForm(p) {
     keywords: (kwRaw || "").split(",").map(function(k) { return k.trim().toLowerCase(); }).filter(Boolean),
     threshold: isNaN(thresh) ? 7 : Math.max(1, Math.min(10, thresh)),
     interval_min: isNaN(interval) ? 5 : Math.max(1, Math.min(60, interval)),
-    max_age_hours: isNaN(ageHours) ? 6 : Math.max(1, Math.min(168, ageHours))
+    max_age_hours: isNaN(ageHours) ? 6 : Math.max(1, Math.min(168, ageHours)),
+    max_alerts_per_cycle: isNaN(maxAlerts) ? 3 : Math.max(1, Math.min(20, maxAlerts))
   };
 }
 
@@ -1664,7 +1718,8 @@ function fillConfigForm() {
   set("f-kw",       (cfg.keywords || []).join(", "));
   set("f-thresh",   cfg.threshold != null ? cfg.threshold : 7);
   set("f-interval", cfg.interval_min != null ? cfg.interval_min : 5);
-  set("f-age",      cfg.max_age_hours != null ? cfg.max_age_hours : 6);
+  set("f-age",       cfg.max_age_hours != null ? cfg.max_age_hours : 6);
+  set("f-maxalerts", cfg.max_alerts_per_cycle != null ? cfg.max_alerts_per_cycle : 3);
 }
 
 async function handleTestNtfy() {
