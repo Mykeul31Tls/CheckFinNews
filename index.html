@@ -408,6 +408,52 @@
 
     /* ---- Cartes d'alertes ---- */
 
+    /* ---- Swipe-to-delete ---- */
+
+    .swipe-wrapper {
+      position: relative;
+      overflow: hidden;
+      border-radius: var(--r);
+      touch-action: pan-y;
+    }
+
+    .swipe-delete-bg {
+      position: absolute;
+      right: 0; top: 0; bottom: 0;
+      width: 80px;
+      background: var(--red);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: var(--mono);
+      font-size: 11px;
+      font-weight: 700;
+      color: white;
+      letter-spacing: 0.06em;
+      border-radius: var(--r);
+      opacity: 0;
+      transition: opacity 0.15s;
+    }
+
+    .swipe-wrapper.revealing .swipe-delete-bg { opacity: 1; }
+
+    .swipe-card-inner {
+      transform: translateX(0);
+      transition: transform 0.2s ease;
+      position: relative;
+      z-index: 1;
+      border-radius: var(--r);
+    }
+
+    .swipe-wrapper.swiped .swipe-card-inner {
+      transform: translateX(-80px);
+    }
+
+    .swipe-wrapper.dismissed .swipe-card-inner {
+      transform: translateX(-110%);
+      transition: transform 0.25s ease;
+    }
+
     .alert-card {
       background: var(--s1);
       border: 1px solid var(--border);
@@ -1562,7 +1608,7 @@ function renderAlerts() {
     return;
   }
 
-  container.innerHTML = alerts.map(function(a) {
+  container.innerHTML = alerts.map(function(a, idx) {
     var dirClass =
       a.direction === "hausse" ? "dir-up" :
       a.direction === "baisse" ? "dir-down" : "dir-neutral";
@@ -1573,29 +1619,113 @@ function renderAlerts() {
     var timeStr = fmtHHMM(a.time);
     var link = safeUrl(a.link);
 
-    return '<div class="alert-card ' + dirClass + '">' +
-      '<div class="alert-inner">' +
-        '<div class="alert-top">' +
-          '<div class="alert-score-block">' +
-            '<div class="alert-score-num">' + a.impact_score + '</div>' +
-            '<div class="alert-score-denom">/10</div>' +
+    return '<div class="swipe-wrapper" data-idx="' + idx + '">' +
+      '<div class="swipe-delete-bg">SUPPR</div>' +
+      '<div class="swipe-card-inner">' +
+        '<div class="alert-card ' + dirClass + '">' +
+          '<div class="alert-inner">' +
+            '<div class="alert-top">' +
+              '<div class="alert-score-block">' +
+                '<div class="alert-score-num">' + a.impact_score + '</div>' +
+                '<div class="alert-score-denom">/10</div>' +
+              '</div>' +
+              '<div class="alert-meta">' +
+                '<div class="alert-dir-badge">' + dirLabel + '</div>' +
+                (tickers ? '<div class="alert-tickers">' + escHtml(tickers) + '</div>' : '') +
+                '<div class="alert-confiance">confiance : ' + escHtml(a.confiance || 'N/A') + '</div>' +
+              '</div>' +
+              '<div class="alert-time-lbl">' + timeStr + '</div>' +
+            '</div>' +
+            '<div class="alert-raison">' + escHtml(a.raison) + '</div>' +
+            '<div class="alert-title-txt">' + escHtml(a.title) + '</div>' +
           '</div>' +
-          '<div class="alert-meta">' +
-            '<div class="alert-dir-badge">' + dirLabel + '</div>' +
-            (tickers ? '<div class="alert-tickers">' + escHtml(tickers) + '</div>' : '') +
-            '<div class="alert-confiance">confiance : ' + escHtml(a.confiance || 'N/A') + '</div>' +
+          '<div class="alert-footer">' +
+            '<div class="alert-source-lbl">' + escHtml(a.source_label) + '</div>' +
+            (link ? '<a href="' + link + '" target="_blank" class="alert-link-btn">Lire</a>' : '') +
           '</div>' +
-          '<div class="alert-time-lbl">' + timeStr + '</div>' +
         '</div>' +
-        '<div class="alert-raison">' + escHtml(a.raison) + '</div>' +
-        '<div class="alert-title-txt">' + escHtml(a.title) + '</div>' +
-      '</div>' +
-      '<div class="alert-footer">' +
-        '<div class="alert-source-lbl">' + escHtml(a.source_label) + '</div>' +
-        (link ? '<a href="' + link + '" target="_blank" class="alert-link-btn">Lire</a>' : '') +
       '</div>' +
     '</div>';
   }).join("");
+
+  // Attacher les listeners de swipe apres injection du HTML
+  attachSwipeListeners();
+}
+
+function attachSwipeListeners() {
+  var wrappers = document.querySelectorAll(".swipe-wrapper");
+  wrappers.forEach(function(wrapper) {
+    var startX = 0;
+    var startY = 0;
+    var currentX = 0;
+    var isDragging = false;
+    var isHorizontal = null;
+    var inner = wrapper.querySelector(".swipe-card-inner");
+    var THRESHOLD = 60;  // px pour declencher la suppression
+    var REVEAL    = 80;  // px de reveal du bouton rouge
+
+    wrapper.addEventListener("touchstart", function(e) {
+      // Ne pas intercepter si l'element est deja en cours de dismiss
+      if (wrapper.classList.contains("dismissed")) return;
+      startX = e.touches[0].clientX;
+      startY = e.touches[0].clientY;
+      currentX = 0;
+      isDragging = true;
+      isHorizontal = null;
+      inner.style.transition = "none";
+    }, { passive: true });
+
+    wrapper.addEventListener("touchmove", function(e) {
+      if (!isDragging) return;
+      var dx = e.touches[0].clientX - startX;
+      var dy = e.touches[0].clientY - startY;
+
+      // Determiner la direction dominante au premier mouvement
+      if (isHorizontal === null) {
+        if (Math.abs(dx) < 5 && Math.abs(dy) < 5) return;
+        isHorizontal = Math.abs(dx) > Math.abs(dy);
+      }
+
+      // Laisser le scroll vertical au parent
+      if (!isHorizontal) { isDragging = false; return; }
+
+      e.stopPropagation();
+
+      // Seulement vers la gauche (dx negatif)
+      currentX = Math.min(0, dx);
+      var clamped = Math.max(-REVEAL - 10, currentX);
+      inner.style.transform = "translateX(" + clamped + "px)";
+      wrapper.classList.toggle("revealing", clamped < -20);
+    }, { passive: false });
+
+    wrapper.addEventListener("touchend", function() {
+      if (!isDragging) return;
+      isDragging = false;
+      inner.style.transition = "";
+
+      if (currentX < -THRESHOLD) {
+        // Dismiss : animer vers la gauche puis supprimer
+        wrapper.classList.add("dismissed");
+        wrapper.classList.remove("revealing");
+        var idx = parseInt(wrapper.getAttribute("data-idx"));
+        setTimeout(function() {
+          dismissAlert(idx);
+        }, 260);
+      } else {
+        // Snap back
+        inner.style.transform = "";
+        wrapper.classList.remove("revealing", "swiped");
+      }
+    }, { passive: true });
+  });
+}
+
+function dismissAlert(idx) {
+  if (idx < 0 || idx >= alerts.length) return;
+  alerts.splice(idx, 1);
+  saveAlerts();
+  renderAlerts();
+  updateHeader();
 }
 
 function renderLog() {
