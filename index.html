@@ -967,6 +967,26 @@ var MAX_ALERTS_PER_CYCLE = 3;
 // une alerte avec memes tickers + meme direction dans cette fenetre = doublon
 var DEDUP_WINDOW_MIN = 120;
 
+// Alias de recherche pour les tickers ambigus ou peu connus de Google News.
+// Cle = ticker tel que saisi dans config, valeur = nom utilise dans les requetes Google News.
+// Les tickers non listes ici utilisent directement leur symbole comme terme de recherche.
+var TICKER_SEARCH_ALIAS = {
+  "ETL":    "Eutelsat",
+  "AIR":    "Airbus",
+  "ORA":    "Orange telecom",
+  "BNP":    "BNP Paribas",
+  "SAN":    "Sanofi",
+  "TTE":    "TotalEnergies",
+  "MC":     "LVMH",
+  "OR":     "L'Oreal",
+  "CS":     "AXA assurance",
+  "GLE":    "Societe Generale",
+  "CAP":    "Capgemini",
+  "DSY":    "Dassault Systemes",
+  "HO":     "Thales defense",
+  "SAF":    "Safran"
+};
+
 // Flux statiques - bases sur Google News pour la fiabilite maximale via proxy
 // + quelques flux RSS libres qui passent les proxies CORS
 var STATIC_FEEDS = [
@@ -1019,6 +1039,26 @@ var STATIC_FEEDS = [
     id: "prnewswire",
     label: "PR Newswire",
     url: "https://www.prnewswire.com/rss/news-releases-list.rss"
+  },
+  {
+    id: "boursorama_actu",
+    label: "Boursorama Actualites",
+    url: "https://www.boursorama.com/bourse/actualites/rss/"
+  },
+  {
+    id: "boursorama_societes",
+    label: "Boursorama Societes",
+    url: "https://www.boursorama.com/bourse/actualites/societes/rss/"
+  },
+  {
+    id: "zonebourse",
+    label: "Zone Bourse",
+    url: "https://www.zonebourse.com/rss/actualites.aspx"
+  },
+  {
+    id: "abcbourse",
+    label: "ABC Bourse",
+    url: "https://www.abcbourse.com/rss/rss_actus.aspx"
   }
 ];
 
@@ -1158,20 +1198,22 @@ function addLog(level, msg) {
 function buildDynamicFeeds(tickers) {
   var feeds = [];
   tickers.forEach(function(t) {
+    // Utiliser le nom complet de la societe si disponible dans TICKER_SEARCH_ALIAS
+    var searchName = TICKER_SEARCH_ALIAS[t.toUpperCase()] || t;
     // Google News francais - angle bourse/cours
     feeds.push({
       id: "gnews_fr_" + t,
-      label: "Google News FR " + t,
+      label: "Google News FR " + searchName,
       url: "https://news.google.com/rss/search?q=" +
-           encodeURIComponent(t + " action cours bourse") +
+           encodeURIComponent(searchName + " action cours bourse") +
            "&hl=fr&gl=FR&ceid=FR:fr"
     });
     // Google News anglais - angle stock/earnings
     feeds.push({
       id: "gnews_en_" + t,
-      label: "Google News EN " + t,
+      label: "Google News EN " + searchName,
       url: "https://news.google.com/rss/search?q=" +
-           encodeURIComponent(t + " stock earnings contract") +
+           encodeURIComponent(searchName + " stock earnings contract") +
            "&hl=en-US&gl=US&ceid=US:en"
     });
   });
