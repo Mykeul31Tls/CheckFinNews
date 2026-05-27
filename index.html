@@ -990,75 +990,63 @@ var TICKER_SEARCH_ALIAS = {
 // Flux statiques - bases sur Google News pour la fiabilite maximale via proxy
 // + quelques flux RSS libres qui passent les proxies CORS
 var STATIC_FEEDS = [
+  // Flux thematiques FR - recherches Google News search?q= uniquement (plus fiable via proxy)
   {
-    id: "gnews_finance_fr",
-    label: "Google News Finance FR",
-    url: "https://news.google.com/rss/topics/CAAqJggKIiBDQkFTRWdvSUwyMHZNRGx6TVdZU0FtWnZHZ0pHVWlnQVAB?hl=fr&gl=FR&ceid=FR:fr"
+    id: "gnews_acq_fr",
+    label: "Google News Acquisitions FR",
+    url: "https://news.google.com/rss/search?q=" +
+         encodeURIComponent("acquisition fusion milliard contrat bourse france") +
+         "&hl=fr&gl=FR&ceid=FR:fr"
   },
   {
-    id: "gnews_finance_us",
-    label: "Google News Finance US",
-    url: "https://news.google.com/rss/topics/CAAqJggKIiBDQkFTRWdvSUwyMHZNRGx6TVdZU0FtVnVHZ0pWVWlnQVAB?hl=en-US&gl=US&ceid=US:en"
+    id: "gnews_quantum_fr",
+    label: "Google News Quantique FR",
+    url: "https://news.google.com/rss/search?q=" +
+         encodeURIComponent("informatique quantique financement bourse cours") +
+         "&hl=fr&gl=FR&ceid=FR:fr"
+  },
+  {
+    id: "gnews_defense_fr",
+    label: "Google News Defense FR",
+    url: "https://news.google.com/rss/search?q=" +
+         encodeURIComponent("defense spatial satellite contrat gouvernement bourse") +
+         "&hl=fr&gl=FR&ceid=FR:fr"
   },
   {
     id: "gnews_tech_fr",
     label: "Google News Tech FR",
-    url: "https://news.google.com/rss/topics/CAAqJggKIiBDQkFTRWdvSUwyMHZNREp1Y1dZU0FtWnZHZ0pHVWlnQVAB?hl=fr&gl=FR&ceid=FR:fr"
+    url: "https://news.google.com/rss/search?q=" +
+         encodeURIComponent("technologie investissement financement milliard bourse") +
+         "&hl=fr&gl=FR&ceid=FR:fr"
   },
+  // Flux thematiques EN
   {
-    id: "gnews_quantum",
-    label: "Google News Quantique",
-    url: "https://news.google.com/rss/search?q=informatique+quantique+bourse+financement&hl=fr&gl=FR&ceid=FR:fr"
-  },
-  {
-    id: "gnews_defense",
-    label: "Google News Defense",
-    url: "https://news.google.com/rss/search?q=defense+aerospace+contrat+gouvernement+bourse&hl=fr&gl=FR&ceid=FR:fr"
-  },
-  {
-    id: "gnews_satellite",
-    label: "Google News Satellite",
-    url: "https://news.google.com/rss/search?q=satellite+LEO+constellation+orbite+bourse&hl=fr&gl=FR&ceid=FR:fr"
+    id: "gnews_acq_en",
+    label: "Google News Acquisitions EN",
+    url: "https://news.google.com/rss/search?q=" +
+         encodeURIComponent("billion acquisition merger contract stock market") +
+         "&hl=en-US&gl=US&ceid=US:en"
   },
   {
     id: "gnews_quantum_en",
     label: "Google News Quantum EN",
-    url: "https://news.google.com/rss/search?q=quantum+computing+chip+government+funding+stock&hl=en-US&gl=US&ceid=US:en"
+    url: "https://news.google.com/rss/search?q=" +
+         encodeURIComponent("quantum computing government funding stock") +
+         "&hl=en-US&gl=US&ceid=US:en"
   },
   {
-    id: "gnews_ma_en",
-    label: "Google News M&A EN",
-    url: "https://news.google.com/rss/search?q=acquisition+merger+billion+contract+stock+market&hl=en-US&gl=US&ceid=US:en"
+    id: "gnews_defense_en",
+    label: "Google News Defense EN",
+    url: "https://news.google.com/rss/search?q=" +
+         encodeURIComponent("defense aerospace satellite government contract stock") +
+         "&hl=en-US&gl=US&ceid=US:en"
   },
   {
-    id: "cnbc_finance",
-    label: "CNBC Finance",
-    url: "https://www.cnbc.com/id/10000664/device/rss/rss.html"
-  },
-  {
-    id: "prnewswire",
-    label: "PR Newswire",
-    url: "https://www.prnewswire.com/rss/news-releases-list.rss"
-  },
-  {
-    id: "boursorama_actu",
-    label: "Boursorama Actualites",
-    url: "https://www.boursorama.com/bourse/actualites/rss/"
-  },
-  {
-    id: "boursorama_societes",
-    label: "Boursorama Societes",
-    url: "https://www.boursorama.com/bourse/actualites/societes/rss/"
-  },
-  {
-    id: "zonebourse",
-    label: "Zone Bourse",
-    url: "https://www.zonebourse.com/rss/actualites.aspx"
-  },
-  {
-    id: "abcbourse",
-    label: "ABC Bourse",
-    url: "https://www.abcbourse.com/rss/rss_actus.aspx"
+    id: "gnews_tech_en",
+    label: "Google News Tech EN",
+    url: "https://news.google.com/rss/search?q=" +
+         encodeURIComponent("technology billion funding deal stock market") +
+         "&hl=en-US&gl=US&ceid=US:en"
   }
 ];
 
