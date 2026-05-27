@@ -1,1 +1,1 @@
-# -CheckFinNews
+# CheckFinNews
