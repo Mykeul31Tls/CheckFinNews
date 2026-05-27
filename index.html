@@ -1487,7 +1487,7 @@ async function runCycle() {
       totalScored++;
       setScanProgress(60 + Math.round((si + 1) * scoreStep));
 
-      if (score.impact_score >= cfg.threshold) {
+      if (Number(score.impact_score) >= Number(cfg.threshold)) {
         // Garde-fou 1 : plafond d'alertes par cycle
         var _maxAlerts = (cfg && cfg.max_alerts_per_cycle) ? cfg.max_alerts_per_cycle : MAX_ALERTS_PER_CYCLE;
         if (alertsThisCycle >= _maxAlerts) {
@@ -1847,7 +1847,7 @@ function readForm(p) {
     ntfy_topic: ntfyTopic,
     tickers: tickersRaw.split(",").map(function(t) { return t.trim().toUpperCase(); }).filter(Boolean),
     keywords: (kwRaw || "").split(",").map(function(k) { return k.trim().toLowerCase(); }).filter(Boolean),
-    threshold: isNaN(thresh) ? 7 : Math.max(1, Math.min(10, thresh)),
+    threshold: isNaN(thresh) ? 7 : Math.max(1, Math.min(10, Number(thresh))),
     interval_min: isNaN(interval) ? 5 : Math.max(1, Math.min(60, interval)),
     max_age_hours: isNaN(ageHours) ? 6 : Math.max(1, Math.min(168, ageHours)),
     max_alerts_per_cycle: isNaN(maxAlerts) ? 3 : Math.max(1, Math.min(20, maxAlerts))
