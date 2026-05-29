@@ -5,8 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="apple-mobile-web-app-title" content="Veille Bourse">
-  <title>Veille Bourse</title>
+  <meta name="apple-mobile-web-app-title" content="CheckFinNews">
+  <title>CheckFinNews</title>
   <style>
     @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@300;400;600;700&display=swap');
 
@@ -722,6 +722,28 @@
       transition: width 0.4s ease;
     }
 
+    /* ---- Copyright ---- */
+
+    .setup-copyright {
+      margin-top: 18px;
+      font-family: var(--mono);
+      font-size: 9px;
+      color: var(--t4);
+      letter-spacing: 0.04em;
+      line-height: 1.6;
+    }
+
+    #app-copyright {
+      text-align: center;
+      font-family: var(--mono);
+      font-size: 8px;
+      color: var(--t4);
+      letter-spacing: 0.04em;
+      padding: 4px 0 2px;
+      border-top: 1px solid var(--border);
+      background: var(--s1);
+    }
+
     /* ---- Transitions d'ecran ---- */
 
     #screen-setup, #screen-app { transition: opacity 0.2s; }
@@ -760,11 +782,12 @@
       <div class="badge-dot"></div>
       POC v1.0
     </div>
-    <div class="setup-title">Veille<br><span>Bourse</span></div>
+    <div class="setup-title">Check<span>FinNews</span></div>
     <div class="setup-desc">
       Surveillance RSS + scoring IA en temps reel.<br>
       Laissez l'app au premier plan pendant les heures de marche.
     </div>
+    <div class="setup-copyright">CheckFinNews &mdash; Copyright &copy; 2026 MBO | Mind Bolt Objects</div>
   </div>
 
   <div class="setup-body">
@@ -796,7 +819,7 @@
 
       <div class="fg">
         <label for="s-kw">Mots-cles sectoriels</label>
-        <textarea id="s-kw">quantum, satellite, milliard, billion, acquisition, fusion, contrat gouvernemental, government funding, LEO orbit</textarea>
+        <textarea id="s-kw">quantum, satellite, milliard, billion, acquisition, fusion, contrat gouvernemental, government funding, LEO orbit, accord de paix, cessez-le-feu, sanctions, embargo, accord nucleaire, OPEP, OPEC, ceasefire, peace deal, sanctions lifted, nuclear deal, trade war, tariffs, G7, G20, taux directeur, fed rate, inflation, recession</textarea>
         <div class="hint">Mots-cles additionnels, separes par des virgules</div>
       </div>
     </div>
@@ -843,7 +866,7 @@
   <!-- En-tete -->
   <div id="app-header">
     <div class="header-r1">
-      <div class="app-name">Veille<span>.</span>Bourse</div>
+      <div class="app-name">Check<span>.</span>FinNews</div>
       <div class="status-pill">
         <div id="status-dot" class="status-dot paused"></div>
         <span id="status-txt">Init...</span>
@@ -929,6 +952,7 @@
   </div>
 
   <!-- Navigation -->
+  <div id="app-copyright">CheckFinNews &mdash; Copyright &copy; 2026 MBO | Mind Bolt Objects</div>
   <nav id="app-nav">
     <button id="btn-alerts" class="tab-btn active" onclick="showTab('alerts')" style="touch-action:manipulation">
       <span class="tb-label">Alertes</span>
@@ -1047,6 +1071,49 @@ var STATIC_FEEDS = [
     url: "https://news.google.com/rss/search?q=" +
          encodeURIComponent("technology billion funding deal stock market") +
          "&hl=en-US&gl=US&ceid=US:en"
+  },
+  // Flux geopolitiques et macro-economiques
+  {
+    id: "gnews_geo_fr",
+    label: "Google News Geopolitique FR",
+    url: "https://news.google.com/rss/search?q=" +
+         encodeURIComponent("accord paix sanctions embargo ceasefire bourse marches") +
+         "&hl=fr&gl=FR&ceid=FR:fr"
+  },
+  {
+    id: "gnews_geo_en",
+    label: "Google News Geopolitics EN",
+    url: "https://news.google.com/rss/search?q=" +
+         encodeURIComponent("geopolitics peace deal sanctions ceasefire market stocks") +
+         "&hl=en-US&gl=US&ceid=US:en"
+  },
+  {
+    id: "gnews_macro_fr",
+    label: "Google News Macro FR",
+    url: "https://news.google.com/rss/search?q=" +
+         encodeURIComponent("banque centrale taux inflation recession croissance bourse") +
+         "&hl=fr&gl=FR&ceid=FR:fr"
+  },
+  {
+    id: "gnews_macro_en",
+    label: "Google News Macro EN",
+    url: "https://news.google.com/rss/search?q=" +
+         encodeURIComponent("fed rate hike inflation recession GDP market") +
+         "&hl=en-US&gl=US&ceid=US:en"
+  },
+  {
+    id: "gnews_energy_en",
+    label: "Google News Energie EN",
+    url: "https://news.google.com/rss/search?q=" +
+         encodeURIComponent("OPEC oil price barrel energy market stocks") +
+         "&hl=en-US&gl=US&ceid=US:en"
+  },
+  {
+    id: "gnews_trade_en",
+    label: "Google News Commerce EN",
+    url: "https://news.google.com/rss/search?q=" +
+         encodeURIComponent("trade war tariffs trade agreement G7 G20 market") +
+         "&hl=en-US&gl=US&ceid=US:en"
   }
 ];
 
@@ -1070,7 +1137,15 @@ var SYSTEM_PROMPT =
   "- 3-4 : evenement faible impact (declaration standard, publication reguliere)\n" +
   "- 0-2 : evenement sans impact cours (communique administratif, calendrier, avis divers)\n\n" +
   "Pour tickers_concernes : symboles boursiers standard (IBM, ETL, AIR).\n" +
-  "Si aucun ticker identifiable : tableau vide.";
+  "Si aucun ticker identifiable mais impact sectoriel majeur : tableau vide accepte.\n\n" +
+  "Evenements geopolitiques et macro-economiques a scorer 9-10 meme sans ticker :\n" +
+  "- Accord de paix ou cessez-le-feu dans une zone de conflit majeur\n" +
+  "- Levee ou imposition de sanctions economiques importantes\n" +
+  "- Decisions des banques centrales (Fed, BCE) sur les taux directeurs\n" +
+  "- Accords commerciaux ou guerres commerciales entre grandes puissances\n" +
+  "- Variations majeures du prix du petrole (OPEP, chocs d'offre)\n" +
+  "- Crises politiques majeures affectant des economies importantes\n" +
+  "Pour ces evenements, direction = hausse si favorable aux marches, baisse si defavorable.";
 
 // ====================================================================
 // ETAT
@@ -1425,32 +1500,38 @@ async function runCycle() {
 
   var toScore = [];
 
-  for (var fi = 0; fi < allFeeds.length; fi++) {
-    var feed = allFeeds[fi];
-    try {
-      var items = await fetchFeed(feed);
-      var fresh = items.filter(function(it) { return !seen.has(it.id); });
-      fresh.forEach(function(it) { seen.add(it.id); });
-      // Limiter aux MAX_ITEMS_PER_FEED items les plus recents par flux
-      // Filtrer d'abord par age, puis limiter, puis pre-filtre thematique
-      var recentOnly = filterByAge(fresh);
-      var freshLimited = recentOnly.slice(0, MAX_ITEMS_PER_FEED);
-      var passed = preFilter(freshLimited);
-      var skippedOld = fresh.length - recentOnly.length;
-      if (skippedOld > 0 || passed.length > 0) {
-        addLog("INFO",
-          feed.label + " : " + fresh.length + " nouveaux" +
-          (skippedOld > 0 ? " (" + skippedOld + " trop anciens ignores)" : "") +
-          (passed.length > 0 ? ", " + passed.length + " passes filtre" : ", 0 passes filtre")
-        );
-      }
-      toScore = toScore.concat(passed);
-    } catch(err) {
-      addLog("WARN", feed.label + " : " + err.message);
-    }
-    feedsDone++;
-    setScanProgress(Math.round((feedsDone / feedsTotal) * 60));
-  }
+  // Collecte parallele : tous les flux sont fetches simultanement
+  // Le cycle prend le temps du flux le plus lent, pas la somme de tous
+  var feedPromises = allFeeds.map(function(feed) {
+    return fetchFeed(feed)
+      .then(function(items) {
+        var fresh = items.filter(function(it) { return !seen.has(it.id); });
+        fresh.forEach(function(it) { seen.add(it.id); });
+        var recentOnly = filterByAge(fresh);
+        var freshLimited = recentOnly.slice(0, MAX_ITEMS_PER_FEED);
+        var passed = preFilter(freshLimited);
+        var skippedOld = fresh.length - recentOnly.length;
+        if (skippedOld > 0 || passed.length > 0) {
+          addLog("INFO",
+            feed.label + " : " + fresh.length + " nouveaux" +
+            (skippedOld > 0 ? " (" + skippedOld + " trop anciens ignores)" : "") +
+            (passed.length > 0 ? ", " + passed.length + " passes filtre" : ", 0 passes filtre")
+          );
+        }
+        feedsDone++;
+        setScanProgress(Math.round((feedsDone / feedsTotal) * 60));
+        return passed;
+      })
+      .catch(function(err) {
+        addLog("WARN", feed.label + " : " + err.message);
+        feedsDone++;
+        setScanProgress(Math.round((feedsDone / feedsTotal) * 60));
+        return [];
+      });
+  });
+
+  var results = await Promise.all(feedPromises);
+  results.forEach(function(passed) { toScore = toScore.concat(passed); });
 
   saveSeen();
 
@@ -1891,7 +1972,7 @@ async function handleTestNtfy() {
     var resp = await fetch("https://ntfy.sh/" + cfg.ntfy_topic, {
       method: "POST",
       headers: {
-        "Title": "Test Veille Bourse",
+        "Title": "Test CheckFinNews",
         "Priority": "default",
         "Content-Type": "text/plain; charset=utf-8"
       },
