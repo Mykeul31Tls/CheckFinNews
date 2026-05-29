@@ -973,11 +973,17 @@
 // CONSTANTES
 // ====================================================================
 
-// Proxies CORS testes par ordre de priorite - le premier qui repond est utilise
+// Proxies CORS testes par ordre de priorite - fallback automatique si le premier echoue
 var RSS_PROXIES = [
   "https://corsproxy.io/?url=",
-  "https://api.allorigins.win/raw?url="
+  "https://api.allorigins.win/raw?url=",
+  "https://thingproxy.freeboard.io/fetch/",
+  "https://api.codetabs.com/v1/proxy?quest="
 ];
+
+// Nombre de flux traites en parallele par lot
+// Trop eleve = rate-limit proxy, trop bas = cycle lent
+var FETCH_BATCH_SIZE = 6;
 
 // Nombre maximum d'items RSS a conserver par flux (les plus recents seulement)
 var MAX_ITEMS_PER_FEED = 5;
@@ -1500,9 +1506,9 @@ async function runCycle() {
 
   var toScore = [];
 
-  // Collecte parallele : tous les flux sont fetches simultanement
-  // Le cycle prend le temps du flux le plus lent, pas la somme de tous
-  var feedPromises = allFeeds.map(function(feed) {
+  // Collecte par lots paralleles : FETCH_BATCH_SIZE flux simultanes par lot
+  // Evite le rate-limit proxy tout en restant bien plus rapide que la sequence
+  function makeFeedTask(feed) {
     return fetchFeed(feed)
       .then(function(items) {
         var fresh = items.filter(function(it) { return !seen.has(it.id); });
@@ -1528,10 +1534,14 @@ async function runCycle() {
         setScanProgress(Math.round((feedsDone / feedsTotal) * 60));
         return [];
       });
-  });
+  }
 
-  var results = await Promise.all(feedPromises);
-  results.forEach(function(passed) { toScore = toScore.concat(passed); });
+  // Decouper en lots de FETCH_BATCH_SIZE et traiter lot par lot
+  for (var bi = 0; bi < allFeeds.length; bi += FETCH_BATCH_SIZE) {
+    var batch = allFeeds.slice(bi, bi + FETCH_BATCH_SIZE);
+    var batchResults = await Promise.all(batch.map(makeFeedTask));
+    batchResults.forEach(function(passed) { toScore = toScore.concat(passed); });
+  }
 
   saveSeen();
 
