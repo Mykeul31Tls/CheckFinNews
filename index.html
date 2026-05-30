@@ -819,7 +819,7 @@
 
       <div class="fg">
         <label for="s-kw">Mots-cles sectoriels</label>
-        <textarea id="s-kw">quantum, satellite, milliard, billion, acquisition, fusion, contrat gouvernemental, government funding, LEO orbit, accord de paix, cessez-le-feu, sanctions, embargo, accord nucleaire, OPEP, OPEC, ceasefire, peace deal, sanctions lifted, nuclear deal, trade war, tariffs, G7, G20, taux directeur, fed rate, inflation, recession</textarea>
+        <textarea id="s-kw">quantum, satellite, milliard, billion, acquisition, fusion, contrat gouvernemental, government funding, LEO orbit, accord de paix, cessez-le-feu, sanctions, embargo, accord nucleaire, OPEP, OPEC, ceasefire, peace deal, sanctions lifted, nuclear deal, trade war, tariffs, G7, G20, taux directeur, fed rate, inflation, recession, resultats trimestriels, chiffre affaires, benefice net, earnings, revenue, quarterly, profit, beat estimates, depasse les attentes, forte demande, commande record, contrat majeur, strong demand, record orders, releve ses previsions, guidance, raises forecast, upgrades outlook, introduction en bourse, IPO, spin-off, rachat actions, share buyback</textarea>
         <div class="hint">Mots-cles additionnels, separes par des virgules</div>
       </div>
     </div>
@@ -1001,21 +1001,105 @@ var DEDUP_WINDOW_MIN = 120;
 // Cle = ticker tel que saisi dans config, valeur = nom utilise dans les requetes Google News.
 // Les tickers non listes ici utilisent directement leur symbole comme terme de recherche.
 var TICKER_SEARCH_ALIAS = {
+  // CAC40 - mnemoniques ambigus ou peu connus de Google News
   "ETL":    "Eutelsat",
   "AIR":    "Airbus",
+  "AI":     "Air Liquide",
+  "AF":     "Air France KLM",
   "ORA":    "Orange telecom",
-  "BNP":    "BNP Paribas",
-  "SAN":    "Sanofi",
-  "TTE":    "TotalEnergies",
+  "HO":     "Thales defense",
   "MC":     "LVMH",
   "OR":     "L'Oreal",
-  "CS":     "AXA assurance",
+  "SAN":    "Sanofi",
+  "TTE":    "TotalEnergies",
+  "BNP":    "BNP Paribas",
   "GLE":    "Societe Generale",
-  "CAP":    "Capgemini",
+  "ACA":    "Credit Agricole",
+  "CS":     "AXA assurance",
   "DSY":    "Dassault Systemes",
-  "HO":     "Thales defense",
-  "SAF":    "Safran"
+  "CAP":    "Capgemini",
+  "SAF":    "Safran",
+  "STMPA":  "STMicroelectronics",
+  "SOI":    "Soitec",
+  "PUB":    "Publicis",
+  "RNO":    "Renault",
+  "STLA":   "Stellantis",
+  "KER":    "Kering",
+  "RMS":    "Hermes",
+  "DG":     "Vinci construction",
+  "ML":     "Michelin",
+  "SGO":    "Saint-Gobain",
+  "LR":     "Legrand",
+  "EN":     "Bouygues",
+  "VIE":    "Veolia",
+  "WLN":    "Worldline",
+  "TEP":    "Teleperformance",
+  "SU":     "Schneider Electric",
+  "RI":     "Pernod Ricard",
+  "EL":     "EssilorLuxottica",
+  "ERF":    "Eurofins",
+  // EuroStoxx50 / DAX additions
+  "IFX":    "Infineon Technologies",
+  "IFXDE":  "Infineon Technologies",
+  "IFX.DE": "Infineon Technologies",
+  "SIE":    "Siemens",
+  "SAP":    "SAP software",
+  "ASML":   "ASML semiconductor",
+  "ALV":    "Allianz",
+  "DTE":    "Deutsche Telekom",
+  "BAS":    "BASF chemicals",
+  "BMW":    "BMW automobiles",
+  "MBG":    "Mercedes Benz",
+  "MUV2":   "Munich Re",
+  "BAYN":   "Bayer pharmaceuticals",
+  "DBK":    "Deutsche Bank",
+  "RWE":    "RWE energie",
+  "ENEL":   "Enel energie",
+  "ENI":    "ENI petrole",
+  "UCG":    "UniCredit",
+  "ISP":    "Intesa Sanpaolo",
+  "PHIA":   "Philips",
+  "INGA":   "ING Group",
+  "AD":     "Ahold Delhaize",
+  "ABI":    "AB InBev",
+  "PRX":    "Prosus Naspers"
 };
+
+// Tickers des grands indices - utilises par le pre-filtre en plus des tickers personnels.
+// Couvre CAC40, EuroStoxx50, DAX, NASDAQ-100 top, S&P500 top.
+// Garantit la detection d'evenements fondamentaux sur toutes les valeurs importantes
+// sans que l'utilisateur ait a les saisir manuellement.
+var MAJOR_INDEX_TICKERS = [
+  // CAC40
+  "AIR","ETL","AI","AF","ORA","HO","MC","OR","SAN","TTE","BNP","GLE","ACA","CS",
+  "DSY","CAP","SAF","STMPA","SOI","PUB","RNO","STLA","KER","RMS","DG","ML","SGO",
+  "LR","EN","VIE","WLN","TEP","SU","RI","EL","ERF","ATO","SEB","BOL","CRI",
+  // EuroStoxx50 / DAX
+  "ASML","SAP","SIE","ALV","DTE","BAS","BMW","MBG","MUV2","BAYN","DBK","RWE",
+  "ENEL","ENI","UCG","ISP","PHIA","INGA","AD","ABI","PRX",
+  "IFX","IFX.DE","VOW","DAI","FRE","HEN3","ZAL","CON","BEI","MTX",
+  // NASDAQ-100 / S&P500 top technologie et secteurs cles
+  "AAPL","MSFT","NVDA","GOOGL","GOOG","AMZN","META","TSLA","AVGO","ORCL",
+  "ADBE","CSCO","INTC","AMD","QCOM","TXN","IBM","NFLX","CRM","NOW",
+  "SNOW","PLTR","IONQ","RGTI","QUBT","DELL","HPE","HPQ","AMAT","LRCX",
+  "KLAC","MRVL","MU","WDC","STX","NTAP","CDNS","SNPS","ANSS",
+  // Energie / defense / aero
+  "XOM","CVX","BP","SHEL","COP","SLB","HAL","RTX","LMT","NOC","GD","BA",
+  "LDOS","SAIC","KTOS","HII","TDG","HWM","TXT","SPR",
+  // Sante / pharma
+  "JNJ","PFE","MRK","ABBV","BMY","AMGN","GILD","BIIB","REGN","VRTX",
+  "LLY","NVO","ROG","NOVN","AZN","GSK","SNY",
+  // Finance
+  "JPM","BAC","WFC","GS","MS","C","BLK","SCHW","AXP","V","MA","PYPL",
+  // Luxe / consommation
+  "LVMH","CDI","CFR","RMS","EL","BRBY","TOD","MOH",
+  // Telecom / media / communication
+  "T","VZ","TMUS","CMCSA","DIS","NFLX","SPOT","WBD","PARA",
+  // Industrie / automobile
+  "GE","MMM","HON","CAT","DE","ETN","EMR","ROK","CARR","OTIS",
+  "TM","HMC","STLA","GM","F","RIVN","NIO","LI","XPEV"
+];
+
 
 // Flux statiques - bases sur Google News pour la fiabilite maximale via proxy
 // + quelques flux RSS libres qui passent les proxies CORS
@@ -1120,6 +1204,41 @@ var STATIC_FEEDS = [
     url: "https://news.google.com/rss/search?q=" +
          encodeURIComponent("trade war tariffs trade agreement G7 G20 market") +
          "&hl=en-US&gl=US&ceid=US:en"
+  },
+  {
+    id: "gnews_earnings_en",
+    label: "Google News Earnings EN",
+    url: "https://news.google.com/rss/search?q=" +
+         encodeURIComponent("earnings beat revenue record quarterly results stock surges") +
+         "&hl=en-US&gl=US&ceid=US:en"
+  },
+  {
+    id: "gnews_earnings_fr",
+    label: "Google News Resultats FR",
+    url: "https://news.google.com/rss/search?q=" +
+         encodeURIComponent("resultats trimestriels chiffre affaires depasse previsions bourse") +
+         "&hl=fr&gl=FR&ceid=FR:fr"
+  },
+  {
+    id: "gnews_demand_en",
+    label: "Google News Demand EN",
+    url: "https://news.google.com/rss/search?q=" +
+         encodeURIComponent("strong demand record orders contract AI server chip stock") +
+         "&hl=en-US&gl=US&ceid=US:en"
+  },
+  {
+    id: "gnews_demand_fr",
+    label: "Google News Demande FR",
+    url: "https://news.google.com/rss/search?q=" +
+         encodeURIComponent("forte demande commande record contrat majeur bourse action") +
+         "&hl=fr&gl=FR&ceid=FR:fr"
+  },
+  {
+    id: "gnews_guidance_en",
+    label: "Google News Guidance EN",
+    url: "https://news.google.com/rss/search?q=" +
+         encodeURIComponent("raises guidance forecast outlook upgrades stock market") +
+         "&hl=en-US&gl=US&ceid=US:en"
   }
 ];
 
@@ -1136,12 +1255,18 @@ var SYSTEM_PROMPT =
   '  "tickers_concernes": ["<TICKER1>"],\n' +
   '  "raison": "<une seule phrase courte en francais, max 120 caracteres>"\n' +
   "}\n\n" +
-  "Criteres de scoring :\n" +
-  "- 9-10 : evenement exceptionnel (acquisition majeure, contrat gouvernemental massif, faillite, fusion)\n" +
-  "- 7-8 : evenement significatif (contrat important, financement notable, partenariat strategique)\n" +
-  "- 5-6 : evenement moderement impactant (resultats en ligne, contrat mineur, nomination)\n" +
-  "- 3-4 : evenement faible impact (declaration standard, publication reguliere)\n" +
-  "- 0-2 : evenement sans impact cours (communique administratif, calendrier, avis divers)\n\n" +
+  "Criteres de scoring :\\n" +
+  "- 9-10 : evenement exceptionnel (acquisition majeure, contrat gouvernemental massif, faillite, fusion,\\n" +
+  "          resultats depassant massivement les attentes, forte demande sectorielle inattendue)\\n" +
+  "- 7-8 : evenement significatif (contrat important, financement notable, partenariat strategique,\\n" +
+  "         resultats superieurs aux attentes, guidance relevee, forte demande produit cle)\\n" +
+  "- 5-6 : evenement moderement impactant (resultats en ligne, contrat mineur, nomination)\\n" +
+  "- 3-4 : evenement faible impact (declaration standard, publication reguliere)\\n" +
+  "- 0-2 : evenement sans impact cours (communique administratif, calendrier, avis divers)\\n\\n" +
+  "Important : ne scorer que les evenements concernant des societes presentes dans les grands\\n" +
+  "indices boursiers (CAC40, EuroStoxx50, DAX, NASDAQ-100, S&P500). Ignorer les PME et\\n" +
+  "micro-capitalisations. Pour les grandes valeurs, scorer sans distinction de taille : un\\n" +
+  "evenement fondamental fort (resultats, demande, contrat) vaut 7-10 quel que soit le secteur.\\n\\n" +
   "Pour tickers_concernes : symboles boursiers standard (IBM, ETL, AIR).\n" +
   "Si aucun ticker identifiable mais impact sectoriel majeur : tableau vide accepte.\n\n" +
   "Evenements geopolitiques et macro-economiques a scorer 9-10 meme sans ticker :\n" +
@@ -1378,11 +1503,16 @@ function parseXml(xmlText, feed) {
 // ====================================================================
 
 function preFilter(items) {
-  var tickers = cfg.tickers.map(function(t) { return t.toLowerCase(); });
-  var kws     = cfg.keywords.map(function(k) { return k.toLowerCase(); });
+  // Tickers personnels + grands indices combines
+  var personalTickers = cfg.tickers.map(function(t) { return t.toLowerCase(); });
+  var indexTickers    = MAJOR_INDEX_TICKERS.map(function(t) { return t.toLowerCase(); });
+  var allTickers      = personalTickers.concat(
+    indexTickers.filter(function(t) { return personalTickers.indexOf(t) === -1; })
+  );
+  var kws = cfg.keywords.map(function(k) { return k.toLowerCase(); });
   return items.filter(function(item) {
     var text = (item.title + " " + item.summary).toLowerCase();
-    if (tickers.some(function(t) { return text.indexOf(t) !== -1; })) return true;
+    if (allTickers.some(function(t) { return text.indexOf(t) !== -1; })) return true;
     if (kws.some(function(k) { return k.length > 2 && text.indexOf(k) !== -1; })) return true;
     return false;
   });
