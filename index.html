@@ -297,24 +297,46 @@
 
     #app-header {
       flex: 0 0 auto;
-      background: var(--s1);
+      background: linear-gradient(160deg, #0d1a3a 0%, #080b14 60%);
       border-bottom: 1px solid var(--border);
-      padding: calc(env(safe-area-inset-top) + 12px) 16px 10px;
+      padding: calc(env(safe-area-inset-top) + 18px) 20px 16px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    /* Meme halo lumineux que le setup */
+    #app-header::before {
+      content: '';
+      position: absolute;
+      top: -60px; right: -40px;
+      width: 200px; height: 200px;
+      background: radial-gradient(circle, rgba(77,159,255,0.10) 0%, transparent 70%);
+      pointer-events: none;
+    }
+
+    #app-header::after {
+      content: '';
+      position: absolute;
+      bottom: -30px; left: -30px;
+      width: 140px; height: 140px;
+      background: radial-gradient(circle, rgba(0,229,160,0.05) 0%, transparent 70%);
+      pointer-events: none;
     }
 
     .header-r1 {
       display: flex;
-      align-items: center;
+      align-items: flex-start;
       justify-content: space-between;
-      margin-bottom: 5px;
+      margin-bottom: 10px;
     }
 
     .app-name {
-      font-family: var(--mono);
-      font-size: 14px;
-      font-weight: 600;
+      font-family: var(--sans);
+      font-size: 28px;
+      font-weight: 700;
       color: var(--t1);
-      letter-spacing: 0.04em;
+      letter-spacing: -0.02em;
+      line-height: 1.1;
     }
 
     .app-name span { color: var(--blue); }
@@ -326,7 +348,9 @@
       background: var(--s2);
       border: 1px solid var(--border);
       border-radius: 20px;
-      padding: 4px 11px;
+      padding: 6px 13px;
+      margin-top: 4px;
+      flex-shrink: 0;
     }
 
     .status-dot {
@@ -353,15 +377,17 @@
 
     #countdown {
       font-family: var(--mono);
-      font-size: 11px;
-      color: var(--t3);
-      min-height: 16px;
+      font-size: 12px;
+      color: var(--t2);
+      min-height: 18px;
+      margin-bottom: 2px;
     }
 
     #header-stats {
       font-family: var(--mono);
       font-size: 10px;
       color: var(--t4);
+      letter-spacing: 0.04em;
     }
 
     /* ---- Barre de controles ---- */
@@ -370,7 +396,7 @@
       flex: 0 0 auto;
       display: flex;
       gap: 8px;
-      padding: 8px 16px;
+      padding: 10px 20px;
       background: var(--s1);
       border-bottom: 1px solid var(--border);
     }
@@ -866,7 +892,7 @@
   <!-- En-tete -->
   <div id="app-header">
     <div class="header-r1">
-      <div class="app-name">Check<span>.</span>FinNews</div>
+      <div class="app-name">Check<span>FinNews</span></div>
       <div class="status-pill">
         <div id="status-dot" class="status-dot paused"></div>
         <span id="status-txt">Init...</span>
