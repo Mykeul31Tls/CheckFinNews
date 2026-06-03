@@ -543,6 +543,52 @@
     ::-webkit-scrollbar { width: 3px; }
     ::-webkit-scrollbar-track { background: transparent; }
     ::-webkit-scrollbar-thumb { background: var(--surface3); border-radius: 2px; }
+
+    /* ========== STATS TAB ========== */
+    .stats-section { margin-bottom: 20px; }
+    .stats-section-title {
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      color: var(--text-dim);
+      margin-bottom: 10px;
+    }
+    .kpi-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+    .kpi-card {
+      background: var(--surface1);
+      border: 1px solid var(--border);
+      border-radius: var(--r);
+      padding: 12px 8px;
+      text-align: center;
+    }
+    .kpi-val {
+      font-family: var(--font-mono);
+      font-size: 18px;
+      font-weight: 500;
+      color: var(--accent);
+      line-height: 1.2;
+      margin-bottom: 3px;
+    }
+    .kpi-label { font-size: 10px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.5px; }
+    .stats-row {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 0;
+      border-bottom: 1px solid rgba(255,255,255,0.04);
+    }
+    .stats-row:last-child { border-bottom: none; }
+    .feed-label { font-family: var(--font-mono); font-size: 11px; color: var(--text); }
+    .feed-bar-wrap { display: flex; align-items: center; gap: 6px; }
+    .feed-bar-bg { width: 72px; height: 4px; background: var(--surface3); border-radius: 2px; overflow: hidden; }
+    .feed-bar-fill { height: 100%; border-radius: 2px; transition: width 0.3s; }
+    .feed-rate { font-family: var(--font-mono); font-size: 10px; color: var(--text-dim); min-width: 28px; text-align: right; }
+    .ticker-rank { font-family: var(--font-mono); font-size: 11px; color: var(--text-dim); min-width: 18px; }
+    .ticker-sym { font-family: var(--font-mono); font-size: 12px; font-weight: 500; color: var(--accent); flex: 1; }
+    .ticker-count { font-family: var(--font-mono); font-size: 11px; color: var(--text-dim); }
+    .stats-empty { font-size: 12px; color: var(--text-dim); padding: 12px 0; }
   </style>
 </head>
 <body>
@@ -553,7 +599,7 @@
     <div class="header-glow"></div>
     <div class="header-row">
       <div class="logo">
-        <span class="logo-check">Check</span><span class="logo-fin">FinNews</span><span class="logo-version">V1.27</span>
+        <span class="logo-check">Check</span><span class="logo-fin">FinNews</span><span class="logo-version">V1.28</span>
       </div>
       <div class="header-controls">
         <div id="status-dot" class="status-dot"></div>
@@ -580,6 +626,9 @@
     <button class="tab-btn" id="tab-btn-logs" onclick="switchTab('logs')">
       Logs
     </button>
+    <button class="tab-btn" id="tab-btn-stats" onclick="switchTab('stats')">
+      Stats
+    </button>
   </nav>
 
   <!-- MAIN -->
@@ -604,6 +653,35 @@
         <button class="btn-sm" onclick="clearLogs()">Effacer les logs</button>
       </div>
       <div id="logs-list"></div>
+    </section>
+
+    <!-- STATS TAB -->
+    <section id="tab-stats" class="tab-panel">
+      <div class="stats-section">
+        <div class="stats-section-title">Scoring LLM — Session en cours</div>
+        <div class="kpi-row">
+          <div class="kpi-card">
+            <div class="kpi-val" id="kpi-calls">0</div>
+            <div class="kpi-label">Appels</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-val" id="kpi-cost">$0.0000</div>
+            <div class="kpi-label">Cout estimé</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-val" id="kpi-tokens">0</div>
+            <div class="kpi-label">Tokens total</div>
+          </div>
+        </div>
+      </div>
+      <div class="stats-section">
+        <div class="stats-section-title">Tickers les plus alertes</div>
+        <div id="stats-tickers"></div>
+      </div>
+      <div class="stats-section">
+        <div class="stats-section-title">Taux de succes par source RSS</div>
+        <div id="stats-feeds"></div>
+      </div>
     </section>
 
   </main>
@@ -638,9 +716,16 @@
         <p class="field-hint">platform.anthropic.com - distincte de claude.ai Pro</p>
       </div>
       <div class="field">
-        <label>Topic ntfy.sh</label>
-        <input type="text" id="inp-ntfy-topic" placeholder="mon-topic-personnel" autocomplete="off" spellcheck="false">
-        <p class="field-hint">Nom du topic auquel vous etes abonne sur iPhone</p>
+        <label>Token Bot Telegram</label>
+        <div class="input-group">
+          <input type="password" id="inp-tg-token" placeholder="123456:ABC-DEF..." autocomplete="off" spellcheck="false">
+        </div>
+        <p class="field-hint">@BotFather — creez votre bot et copiez le token</p>
+      </div>
+      <div class="field">
+        <label>Chat ID Telegram</label>
+        <input type="text" id="inp-tg-chat-id" placeholder="-100123456789 ou 123456789" autocomplete="off" spellcheck="false">
+        <p class="field-hint">Votre ID personnel ou ID d'un groupe/canal</p>
       </div>
     </div>
 
@@ -691,7 +776,7 @@
 
   </div><!-- .settings-body -->
   <div class="settings-footer">
-    <button class="btn-test" onclick="sendTestNotification()">Tester la notification ntfy</button>
+    <button class="btn-test" onclick="sendTestNotification()">Tester la notification Telegram</button>
     <button class="btn-save" onclick="saveSettings()">Enregistrer</button>
   </div>
 </aside>
@@ -706,7 +791,7 @@
 // CONSTANTES
 // ============================================================
 
-const APP_VERSION = '1.27';
+const APP_VERSION = '1.28';
 const STORAGE = {
   config: 'cfn_cfg',
   seen: 'cfn_seen',
@@ -726,7 +811,8 @@ const MAX_LLM_PER_CYCLE = 15;
 
 const DEFAULT_CONFIG = {
   anthropicKey: '',
-  ntfyTopic: '',
+  telegramBotToken: '',
+  telegramChatId: '',
   customTickers: [],
   customKeywords: [],
   scoreThreshold: 7,
@@ -932,6 +1018,12 @@ let nextCycleAt = null;
 let nextCycleTimer = null;
 let alertsBadgeCount = 0;
 let currentTab = 'alerts';
+
+// Stats session (non persistees)
+let llmCalls = 0;
+let llmInputTokens = 0;
+let llmOutputTokens = 0;
+let feedStats = {};
 
 // ============================================================
 // PERSISTANCE
@@ -1146,10 +1238,14 @@ async function collectBatch(feeds) {
 
   const items = [];
   results.forEach((r, i) => {
+    const label = feeds[i].label;
+    if (!feedStats[label]) feedStats[label] = { ok: 0, fail: 0 };
     if (r.status === 'fulfilled') {
       items.push(...r.value);
+      feedStats[label].ok++;
     } else {
-      addLog(`[${feeds[i].label}] echec: ${r.reason?.message || 'erreur'}`, 'warn');
+      addLog(`[${label}] echec: ${r.reason?.message || 'erreur'}`, 'warn');
+      feedStats[label].fail++;
     }
   });
   return items;
@@ -1233,6 +1329,9 @@ async function scoreArticle(item) {
   }
 
   const data = await resp.json();
+  llmCalls++;
+  llmInputTokens += data.usage?.input_tokens || 0;
+  llmOutputTokens += data.usage?.output_tokens || 0;
   const text = data.content?.[0]?.text || '';
   const jsonMatch = text.match(/\{[\s\S]*\}/);
   if (!jsonMatch) throw new Error('Reponse LLM sans JSON valide');
@@ -1270,32 +1369,40 @@ function registerSemanticAlert(score) {
 }
 
 // ============================================================
-// NOTIFICATIONS NTFY
+// NOTIFICATIONS TELEGRAM
 // ============================================================
 
-async function sendNtfy(score, item) {
-  if (!config.ntfyTopic) throw new Error('Topic ntfy non configure');
+async function sendTelegram(score, item) {
+  if (!config.telegramBotToken || !config.telegramChatId) {
+    throw new Error('Telegram non configure (token ou chat ID manquant)');
+  }
   const dirLabel = score.direction === 'hausse' ? 'HAUSSE'
                  : score.direction === 'baisse' ? 'BAISSE' : 'NEUTRE';
   const tickers = score.tickers_concernes.length ? score.tickers_concernes.join(', ') : 'MACRO';
-  const title = `[${dirLabel}] ${tickers} - Score ${score.impact_score}/10`;
-  const body = `${score.raison}\n\n${item.title}\nSource: ${item.feedLabel || ''}`;
-  const priority = score.impact_score >= 9 ? 'urgent' : 'high';
+  const msgText = `<b>[${dirLabel}] ${tickers} — ${score.impact_score}/10</b>\n${score.raison}\n\n<i>${item.title}</i>\nSource : ${item.feedLabel || ''}`;
 
-  const headers = {
-    'Title': title,
-    'Priority': priority,
-    'Content-Type': 'text/plain'
+  const payload = {
+    chat_id: config.telegramChatId,
+    text: msgText,
+    parse_mode: 'HTML',
+    disable_web_page_preview: true
   };
-  if (item.link) headers['Click'] = item.link;
+  if (item.link) {
+    payload.reply_markup = { inline_keyboard: [[{ text: "Lire l’article", url: item.link }]] };
+  }
 
   const resp = await withTimeout(
-    fetch(`https://ntfy.sh/${encodeURIComponent(config.ntfyTopic)}`, {
-      method: 'POST', headers, body
+    fetch(`https://api.telegram.org/bot${config.telegramBotToken}/sendMessage`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
     }),
     8000
   );
-  if (!resp.ok) throw new Error(`ntfy HTTP ${resp.status}`);
+  const data = await resp.json().catch(() => ({}));
+  if (!resp.ok || !data.ok) {
+    throw new Error(`Telegram ${resp.status}: ${data.description || 'erreur'}`);
+  }
 }
 
 // ============================================================
@@ -1413,12 +1520,12 @@ async function runCycle() {
         renderAlertCard(alertObj, true);
         updateStats();
 
-        // Notification ntfy
+        // Notification Telegram
         try {
-          await sendNtfy(score, item);
-          addLog(`Alerte ntfy envoyee : ${score.tickers_concernes.join(',') || 'MACRO'} ${score.impact_score}/10`, 'ok');
+          await sendTelegram(score, item);
+          addLog(`Alerte Telegram envoyee : ${score.tickers_concernes.join(',') || 'MACRO'} ${score.impact_score}/10`, 'ok');
         } catch (e) {
-          addLog(`Erreur ntfy : ${e.message}`, 'error');
+          addLog(`Erreur Telegram : ${e.message}`, 'error');
         }
         alertsSentThisCycle++;
       }
@@ -1626,12 +1733,100 @@ function clearLogs() {
 }
 
 // ============================================================
-// UI : STATS
+// UI : STATS HEADER
 // ============================================================
 
 function updateStats() {
   document.getElementById('stat-cycle').textContent = cycleCount || '--';
   document.getElementById('stat-alerts').textContent = storedAlerts.length;
+}
+
+// ============================================================
+// UI : ONGLET STATISTIQUES
+// ============================================================
+
+function renderStatsPanel() {
+  const HAIKU_IN_PRICE = 0.80;   // USD par million de tokens entrants
+  const HAIKU_OUT_PRICE = 4.00;  // USD par million de tokens sortants
+  const totalTokens = llmInputTokens + llmOutputTokens;
+  const costUsd = (llmInputTokens / 1_000_000 * HAIKU_IN_PRICE) + (llmOutputTokens / 1_000_000 * HAIKU_OUT_PRICE);
+
+  const tokensDisplay = totalTokens >= 1000
+    ? (totalTokens / 1000).toFixed(1) + 'k'
+    : String(totalTokens);
+
+  const callsEl = document.getElementById('kpi-calls');
+  const costEl = document.getElementById('kpi-cost');
+  const tokensEl = document.getElementById('kpi-tokens');
+  if (callsEl) callsEl.textContent = llmCalls;
+  if (costEl) costEl.textContent = '$' + costUsd.toFixed(4);
+  if (tokensEl) tokensEl.textContent = tokensDisplay;
+
+  renderStatsTickers();
+  renderStatsFeeds();
+}
+
+function renderStatsTickers() {
+  const container = document.getElementById('stats-tickers');
+  if (!container) return;
+
+  const counts = {};
+  for (const alert of storedAlerts) {
+    const tickers = alert.score?.tickers_concernes || [];
+    if (tickers.length === 0) {
+      counts['MACRO'] = (counts['MACRO'] || 0) + 1;
+    } else {
+      for (const t of tickers) {
+        counts[t] = (counts[t] || 0) + 1;
+      }
+    }
+  }
+
+  const sorted = Object.entries(counts).sort((a, b) => b[1] - a[1]).slice(0, 10);
+  if (sorted.length === 0) {
+    container.innerHTML = '<div class="stats-empty">Aucune alerte enregistree.</div>';
+    return;
+  }
+
+  container.innerHTML = sorted.map(([sym, n], i) => `
+    <div class="stats-row">
+      <div style="display:flex;align-items:center;gap:8px">
+        <span class="ticker-rank">${i + 1}.</span>
+        <span class="ticker-sym">${sym}</span>
+      </div>
+      <span class="ticker-count">${n} alerte${n > 1 ? 's' : ''}</span>
+    </div>
+  `).join('');
+}
+
+function renderStatsFeeds() {
+  const container = document.getElementById('stats-feeds');
+  if (!container) return;
+
+  const entries = Object.entries(feedStats);
+  if (entries.length === 0) {
+    container.innerHTML = '<div class="stats-empty">Aucune collecte effectuee cette session.</div>';
+    return;
+  }
+
+  entries.sort((a, b) => (b[1].ok + b[1].fail) - (a[1].ok + a[1].fail));
+
+  container.innerHTML = entries.map(([label, s]) => {
+    const total = s.ok + s.fail;
+    const rate = total > 0 ? Math.round(s.ok / total * 100) : 0;
+    const barColor = rate >= 80 ? 'var(--up)' : rate >= 50 ? '#f6ad55' : 'var(--down)';
+    return `
+      <div class="stats-row">
+        <span class="feed-label">${label}</span>
+        <div class="feed-bar-wrap">
+          <div class="feed-bar-bg">
+            <div class="feed-bar-fill" style="width:${rate}%;background:${barColor}"></div>
+          </div>
+          <span class="feed-rate">${rate}%</span>
+        </div>
+      </div>
+    `;
+  }).join('');
 }
 
 // ============================================================
@@ -1650,6 +1845,8 @@ function switchTab(tab) {
     const badge = document.getElementById('alerts-badge');
     badge.style.display = 'none';
     badge.textContent = '0';
+  } else if (tab === 'stats') {
+    renderStatsPanel();
   }
 }
 
@@ -1670,7 +1867,8 @@ function closeSettings() {
 
 function loadFormFromConfig() {
   document.getElementById('inp-api-key').value = config.anthropicKey || '';
-  document.getElementById('inp-ntfy-topic').value = config.ntfyTopic || '';
+  document.getElementById('inp-tg-token').value = config.telegramBotToken || '';
+  document.getElementById('inp-tg-chat-id').value = config.telegramChatId || '';
   document.getElementById('inp-custom-tickers').value = (config.customTickers || []).join('\n');
   document.getElementById('inp-custom-keywords').value = (config.customKeywords || []).join('\n');
 
@@ -1693,14 +1891,9 @@ function loadFormFromConfig() {
 
 function saveSettings() {
   const key = document.getElementById('inp-api-key').value.trim();
-  const topic = document.getElementById('inp-ntfy-topic').value.trim();
 
   if (!key) {
     showToast('La cle API Anthropic est requise.', 'error');
-    return;
-  }
-  if (!topic) {
-    showToast('Le topic ntfy est requis.', 'error');
     return;
   }
 
@@ -1708,7 +1901,8 @@ function saveSettings() {
   const parseKeywords = v => v.split(/[\n,]+/).map(s => s.trim().toLowerCase()).filter(Boolean);
 
   config.anthropicKey = key;
-  config.ntfyTopic = topic;
+  config.telegramBotToken = document.getElementById('inp-tg-token').value.trim();
+  config.telegramChatId = document.getElementById('inp-tg-chat-id').value.trim();
   config.customTickers = parseTickers(document.getElementById('inp-custom-tickers').value);
   config.customKeywords = parseKeywords(document.getElementById('inp-custom-keywords').value);
   config.scoreThreshold = parseInt(document.getElementById('inp-threshold').value);
@@ -1727,24 +1921,31 @@ function toggleApiKeyVisibility() {
 }
 
 async function sendTestNotification() {
-  const topic = document.getElementById('inp-ntfy-topic').value.trim();
-  if (!topic) {
-    showToast('Saisissez un topic ntfy.', 'error');
+  const token = document.getElementById('inp-tg-token').value.trim();
+  const chatId = document.getElementById('inp-tg-chat-id').value.trim();
+  if (!token || !chatId) {
+    showToast('Saisissez le token bot et le chat ID Telegram.', 'error');
     return;
   }
   try {
+    const payload = {
+      chat_id: chatId,
+      text: '<b>CheckFinNews — Test</b>\nSysteme operationnel.',
+      parse_mode: 'HTML'
+    };
     const resp = await withTimeout(
-      fetch(`https://ntfy.sh/${encodeURIComponent(topic)}`, {
+      fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
         method: 'POST',
-        headers: { 'Title': 'CheckFinNews - Test', 'Priority': 'default', 'Content-Type': 'text/plain' },
-        body: 'Notification de test CheckFinNews - systeme operationnel.'
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
       }),
       8000
     );
-    if (resp.ok) {
+    const data = await resp.json().catch(() => ({}));
+    if (resp.ok && data.ok) {
       showToast('Notification de test envoyee.', 'ok');
     } else {
-      showToast(`Erreur ntfy : HTTP ${resp.status}`, 'error');
+      showToast(`Erreur Telegram : ${data.description || resp.status}`, 'error');
     }
   } catch (e) {
     showToast(`Erreur : ${e.message}`, 'error');
@@ -1780,8 +1981,8 @@ function init() {
     addLog('Cle API Anthropic non configuree. Ouvrez les parametres.', 'warn');
     openSettings();
   }
-  if (!config.ntfyTopic) {
-    addLog('Topic ntfy non configure.', 'warn');
+  if (!config.telegramBotToken || !config.telegramChatId) {
+    addLog('Telegram non configure (token ou chat ID manquant).', 'warn');
   }
 }
 
