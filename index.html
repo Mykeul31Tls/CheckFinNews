@@ -1052,29 +1052,45 @@ function stripHtml(html) {
 // ============================================================
 
 async function fetchDirect(url) {
-  const resp = await withTimeout(fetch(url, { cache: 'no-store' }), FETCH_TIMEOUT);
-  if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
-  return await resp.text();
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), FETCH_TIMEOUT);
+  try {
+    const resp = await fetch(url, { cache: 'no-store', signal: controller.signal });
+    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+    return await resp.text();
+  } finally {
+    clearTimeout(timer);
+  }
 }
 
 async function fetchViaProxy(url) {
   for (const proxyFn of PROXIES) {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), FETCH_TIMEOUT);
     try {
       const pUrl = proxyFn(url);
-      const resp = await withTimeout(fetch(pUrl, { cache: 'no-store' }), FETCH_TIMEOUT);
+      const resp = await fetch(pUrl, { cache: 'no-store', signal: controller.signal });
+      clearTimeout(timer);
       if (!resp.ok) continue;
       const text = await resp.text();
       if (text.includes('<') && (text.includes('<item') || text.includes('<entry'))) {
         return text;
       }
-    } catch (_) {}
+    } catch (_) {
+      clearTimeout(timer);
+    }
   }
   throw new Error('tous les proxies ont echoue');
 }
 
 async function fetchFeedText(feedCfg) {
   if (feedCfg.direct) {
-    return await fetchDirect(feedCfg.url);
+    try {
+      return await fetchDirect(feedCfg.url);
+    } catch (_) {
+      // Google News peut echouer sur iOS (rate-limit reseau) : tentative via proxy
+      return await fetchViaProxy(feedCfg.url);
+    }
   }
   return await fetchViaProxy(feedCfg.url);
 }
@@ -1113,7 +1129,9 @@ async function collectBatch(feeds) {
   const results = await Promise.allSettled(
     feeds.map(async f => {
       const text = await fetchFeedText(f);
-      return parseRSS(text, f.label);
+      const items = parseRSS(text, f.label);
+      if (items.length === 0) throw new Error('flux vide ou non parseable');
+      return items;
     })
   );
 
@@ -1122,7 +1140,7 @@ async function collectBatch(feeds) {
     if (r.status === 'fulfilled') {
       items.push(...r.value);
     } else {
-      addLog(`[${feeds[i].label}] echec collecte: ${r.reason?.message || 'erreur'}`, 'warn');
+      addLog(`[${feeds[i].label}] echec: ${r.reason?.message || 'erreur'}`, 'warn');
     }
   });
   return items;
