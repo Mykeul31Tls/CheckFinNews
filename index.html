@@ -101,6 +101,15 @@
     }
     .logo-check { color: #fff; }
     .logo-fin { color: var(--accent); }
+    .logo-version {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      font-weight: 400;
+      color: var(--text-dim);
+      letter-spacing: 0.5px;
+      margin-left: 6px;
+      vertical-align: middle;
+    }
     .header-controls { display: flex; align-items: center; gap: 8px; }
 
     .status-dot {
@@ -544,7 +553,7 @@
     <div class="header-glow"></div>
     <div class="header-row">
       <div class="logo">
-        <span class="logo-check">Check</span><span class="logo-fin">FinNews</span>
+        <span class="logo-check">Check</span><span class="logo-fin">FinNews</span><span class="logo-version">V1.27</span>
       </div>
       <div class="header-controls">
         <div id="status-dot" class="status-dot"></div>
@@ -697,7 +706,7 @@
 // CONSTANTES
 // ============================================================
 
-const APP_VERSION = '1.0';
+const APP_VERSION = '1.27';
 const STORAGE = {
   config: 'cfn_cfg',
   seen: 'cfn_seen',

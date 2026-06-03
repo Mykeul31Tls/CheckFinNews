@@ -113,7 +113,19 @@ Flux RSS (Google News direct + sources tierces via proxy CORS)
 
 ---
 
-## 11. Mode Session
+## 11. Versionnage
+
+À chaque commit+push sur `main`, incrémenter la version affichée dans le header de `index.html`.
+
+Format : **V1.XX** où XX est le nombre total de commits sur `main` après le push (obtenu via `git rev-list --count main` avant de committer, puis ajouter 1).
+
+Emplacements à mettre à jour dans `index.html` :
+- L'élément `<span class="logo-version">V1.XX</span>` dans le header HTML
+- La constante `APP_VERSION = '1.XX'` en JavaScript
+
+---
+
+## 12. Mode Session
 
 **RÈGLE RÉGALIENNE : Chaque session couvre une seule fonctionnalité.**  
 La session se termine dès que code + tests sont fonctionnels.
