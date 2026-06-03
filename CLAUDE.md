@@ -108,8 +108,7 @@ Flux RSS (Google News direct + sources tierces via proxy CORS)
 
 ## 10. Branche de développement
 
-- Développer sur la branche dédiée à la fonctionnalité en cours
-- Ne jamais pousser directement sur `main` sans que code + tests soient fonctionnels
+- Tous les commits et pushs se font directement sur la branche `main` du dépôt
 - Message de commit : description concise du "pourquoi", pas du "quoi"
 
 ---
@@ -121,7 +120,7 @@ La session se termine dès que code + tests sont fonctionnels.
 
 ### Comportement obligatoire en fin de session
 
-1. Commit et push dans la branche `main` du dépôt
+1. Commit et push directement sur la branche `main` du dépôt
 2. Afficher un récapitulatif :
    - Fichiers créés ou modifiés
    - Tests ajoutés
