@@ -604,7 +604,7 @@
     <div class="header-glow"></div>
     <div class="header-row">
       <div class="logo">
-        <span class="logo-check">Check</span><span class="logo-fin">FinNews</span><span class="logo-version">V1.34</span>
+        <span class="logo-check">Check</span><span class="logo-fin">FinNews</span><span class="logo-version">V1.35</span>
       </div>
       <div class="header-controls">
         <div id="status-dot" class="status-dot"></div>
@@ -797,7 +797,7 @@
 // CONSTANTES
 // ============================================================
 
-const APP_VERSION = '1.34';
+const APP_VERSION = '1.35';
 const STORAGE = {
   config: 'cfn_cfg',
   seen: 'cfn_seen',
@@ -953,10 +953,10 @@ function gnews(query, lang) {
 const STATIC_FEEDS = [
   // FR thematiques (Google News, CORS natif)
   { url: gnews('acquisition fusion milliard contrat gouvernement bourse france', 'fr'), label:'GN-FR-MA', direct:true },
-  { url: gnews('informatique quantique financement bourse cours', 'fr'), label:'GN-FR-Quantum', direct:true },
-  { url: gnews('defense spatial satellite contrat gouvernement bourse', 'fr'), label:'GN-FR-Defense', direct:true },
-  { url: gnews('technologie investissement financement milliard bourse', 'fr'), label:'GN-FR-Tech', direct:true },
-  { url: gnews('accord paix sanctions embargo bourse marches', 'fr'), label:'GN-FR-Geo', direct:true },
+  { url: gnews('IA intelligence artificielle investissement action bourse', 'fr'), label:'GN-FR-AI', direct:true },
+  { url: gnews('defense armement contrat milliard bourse france', 'fr'), label:'GN-FR-Defense', direct:true },
+  { url: gnews('tech startup levee fonds milliard valorisation bourse', 'fr'), label:'GN-FR-Tech', direct:true },
+  { url: gnews('risque geopolitique crise impact bourse', 'fr'), label:'GN-FR-Geo', direct:true },
   { url: gnews('banque centrale taux inflation recession croissance bourse', 'fr'), label:'GN-FR-Macro', direct:true },
   { url: gnews('resultats trimestriels chiffre affaires depasse previsions bourse', 'fr'), label:'GN-FR-Earnings', direct:true },
   { url: gnews('forte demande commande record contrat majeur bourse action', 'fr'), label:'GN-FR-Demand', direct:true },
@@ -1004,7 +1004,7 @@ function buildPersonalFeeds(tickers) {
 const PROXIES = [
   u => `https://corsproxy.io/?${encodeURIComponent(u)}`,
   u => `https://api.allorigins.win/raw?url=${encodeURIComponent(u)}`,
-  u => `https://thingproxy.freeboard.io/fetch/${u}`,
+  u => `https://api.allorigins.win/get?url=${encodeURIComponent(u)}`,
   u => `https://api.codetabs.com/v1/proxy?quest=${u}`,
 ];
 
@@ -1181,7 +1181,11 @@ async function fetchViaProxy(url) {
         return resp.text();
       })
       .then(text => {
-        if (text.includes('<') && (text.includes('<item') || text.includes('<entry'))) return text;
+        let xml = text;
+        if (xml.startsWith('{') && xml.includes('"contents"')) {
+          try { xml = JSON.parse(xml).contents || ''; } catch (_) {}
+        }
+        if (xml.includes('<') && (xml.includes('<item') || xml.includes('<entry'))) return xml;
         throw new Error('contenu non RSS');
       })
       .catch(err => {
