@@ -604,7 +604,7 @@
     <div class="header-glow"></div>
     <div class="header-row">
       <div class="logo">
-        <span class="logo-check">Check</span><span class="logo-fin">FinNews</span><span class="logo-version">V1.35</span>
+        <span class="logo-check">Check</span><span class="logo-fin">FinNews</span><span class="logo-version">V1.36</span>
       </div>
       <div class="header-controls">
         <div id="status-dot" class="status-dot"></div>
@@ -797,7 +797,7 @@
 // CONSTANTES
 // ============================================================
 
-const APP_VERSION = '1.35';
+const APP_VERSION = '1.36';
 const STORAGE = {
   config: 'cfn_cfg',
   seen: 'cfn_seen',
@@ -973,12 +973,9 @@ const STATIC_FEEDS = [
   { url: gnews('strong demand record orders contract AI server chip stock', 'en'), label:'GN-EN-Demand', direct:true },
   { url: gnews('raises guidance forecast outlook upgrades stock market', 'en'), label:'GN-EN-Guidance', direct:true },
   // Proxy feeds (tentative, peuvent echouer sur iOS)
-  { url: 'https://www.sec.gov/cgi-bin/browse-edgar?action=getcurrent&type=8-K&output=atom', label:'SEC-8K', direct:false },
   { url: 'https://feed.businesswire.com/rss/home/?rss=G22', label:'BusinessWire', direct:false },
   { url: 'https://www.globenewswire.com/RssFeed/subjectcode/23-Financial%20markets', label:'GlobeNewswire', direct:false },
   { url: 'https://www.prnewswire.com/rss/news-releases-list.rss', label:'PRNewswire', direct:false },
-  { url: 'https://www.boursorama.com/bourse/actualites/rss/', label:'Boursorama', direct:false },
-  { url: 'https://www.lesechos.fr/rss/rss_finance.xml', label:'LesEchos', direct:false },
 ];
 
 function buildPersonalFeeds(tickers) {
@@ -1004,7 +1001,7 @@ function buildPersonalFeeds(tickers) {
 const PROXIES = [
   u => `https://corsproxy.io/?${encodeURIComponent(u)}`,
   u => `https://api.allorigins.win/raw?url=${encodeURIComponent(u)}`,
-  u => `https://api.allorigins.win/get?url=${encodeURIComponent(u)}`,
+  u => `https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(u)}`,
   u => `https://api.codetabs.com/v1/proxy?quest=${u}`,
 ];
 
@@ -1184,6 +1181,14 @@ async function fetchViaProxy(url) {
         let xml = text;
         if (xml.startsWith('{') && xml.includes('"contents"')) {
           try { xml = JSON.parse(xml).contents || ''; } catch (_) {}
+        }
+        if (xml.startsWith('{') && xml.includes('"items"')) {
+          try {
+            const d = JSON.parse(xml);
+            if (d.status === 'ok' && d.items?.length > 0) {
+              xml = `<channel>${d.items.map(i => `<item><title><![CDATA[${i.title}]]></title><link><![CDATA[${i.link}]]></link><description><![CDATA[${i.description || ''}]]></description><pubDate>${i.pubDate}</pubDate></item>`).join('')}</channel>`;
+            }
+          } catch (_) {}
         }
         if (xml.includes('<') && (xml.includes('<item') || xml.includes('<entry'))) return xml;
         throw new Error('contenu non RSS');
